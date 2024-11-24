@@ -1,4 +1,6 @@
-pandas
 streamlit
-apscheduler
-requests
+pandas
+Pillow
+numpy
+opencv-python
+pyzbar
