@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+from PIL import Image
+import numpy as np
+import cv2
+from pyzbar.pyzbar import decode  # For barcode decoding
 
 # Initialize or load the database
 DB_FILE = "product_database.csv"
@@ -16,6 +20,14 @@ def load_database():
 
 def save_database(data):
     data.to_csv(DB_FILE, index=False)
+
+def scan_barcode(image):
+    """Decodes barcodes from an uploaded image."""
+    decoded_objects = decode(image)
+    if decoded_objects:
+        # Return the first detected barcode's data
+        return decoded_objects[0].data.decode('utf-8')
+    return None
 
 # Load data
 database = load_database()
@@ -37,10 +49,33 @@ with col2:
 # Main App Logic
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
+    
+    # Start form context
     with st.form("add_product_form", clear_on_submit=True):
-        ean_no = st.text_input("Product EAN Number", placeholder="Enter EAN Number")
+        # Camera input for mobile or desktop
+        camera_image = st.camera_input(
+            "Scan a barcode using your mobile or laptop camera (choose back camera on mobile)"
+        )
+
+        # Initialize EAN number
+        scanned_ean = None
+
+        if camera_image:
+            # Process the captured image
+            image = Image.open(camera_image)
+            open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            scanned_ean = scan_barcode(open_cv_image)
+            if scanned_ean:
+                st.success(f"Scanned EAN: {scanned_ean}")
+            else:
+                st.error("No valid barcode detected. Please try again.")
+        
+        # EAN Input Field
+        ean_no = st.text_input("Product EAN Number", value=scanned_ean if scanned_ean else "", placeholder="Enter or edit EAN Number manually")
         product_name = st.text_input("Product Name", placeholder="Enter Product Name")
         expiry_date = st.date_input("Expiry Date")
+        
+        # Submit button inside form context
         submit = st.form_submit_button("Add Product")
         
         if submit:
@@ -57,7 +92,7 @@ if st.session_state.page == "Add Product":
                 st.success("Product added successfully!")
             else:
                 st.error("Please fill in all fields.")
-
+    
 elif st.session_state.page == "View Database":
     st.title("Product Database")
     
@@ -76,7 +111,7 @@ elif st.session_state.page == "View Database":
     st.subheader("Expiring Soon")
     current_date = datetime.now()
     expiring_soon = database[
-        (database["expiry_date"] >= current_date) &
+        (database["expiry_date"] >= current_date) & 
         (database["expiry_date"] <= current_date + timedelta(days=5))
     ]
     
