@@ -1,2 +1,2 @@
 libgl1-mesa-glx
-libzbar0
+libglib2.0-0

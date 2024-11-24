@@ -2,5 +2,5 @@ streamlit
 pandas
 Pillow
 numpy
-opencv-python
+opencv-python-headless  # Ensure this version works without GUI
 pyzbar
