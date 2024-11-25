@@ -3,8 +3,53 @@ import pandas as pd
 from datetime import datetime, timedelta
 from PIL import Image
 import numpy as np
-import cv2
-from pyzbar.pyzbar import decode  # For barcode decoding
+
+
+
+import subprocess
+import sys
+
+def install_package(package_name):
+    """Helper function to run system commands to install a package."""
+    try:
+        subprocess.run(["sudo", "apt-get", "update"], check=True)
+        subprocess.run(["sudo", "apt-get", "install", "-y", package_name], check=True)
+        print(f"Successfully installed {package_name}")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install {package_name}. Error: {e}")
+        sys.exit(1)  # Exit the script if installation fails
+
+# OpenCV import and dependency handling
+try:
+    import cv2
+except ImportError as e:
+    print(f"Error importing OpenCV: {e}")
+    print("Attempting to install the required package 'libgl1-mesa-glx'...")
+    install_package("libgl1-mesa-glx")
+    # Retry the import
+    try:
+        import cv2
+        print("Successfully imported OpenCV after installing dependencies.")
+    except ImportError:
+        print("Failed to import OpenCV even after installing dependencies. Exiting.")
+        sys.exit(1)
+
+# Pyzbar import and dependency handling
+try:
+    from pyzbar.pyzbar import decode
+except ImportError as e:
+    print(f"Error importing pyzbar: {e}")
+    print("Attempting to install the required package 'libzbar0'...")
+    install_package("libzbar0")
+    # Retry the import
+    try:
+        from pyzbar.pyzbar import decode
+        print("Successfully imported pyzbar after installing dependencies.")
+    except ImportError:
+        print("Failed to import pyzbar even after installing dependencies. Exiting.")
+        sys.exit(1)
+
+
 
 # Initialize or load the database
 DB_FILE = "product_database.csv"
