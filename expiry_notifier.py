@@ -2,10 +2,7 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient, errors
 from datetime import datetime
-from PIL import Image
-import numpy as np
-import cv2
-from pyzbar.pyzbar import decode
+import streamlit.components.v1 as components
 
 # MongoDB setup
 MONGO_URI = "mongodb+srv://kadamjay100:gRXKF2x1S0GjL4zg@cluster0.288bi.mongodb.net/myDatabase?retryWrites=true&w=majority&appName=Cluster0"
@@ -37,13 +34,6 @@ def add_record(data):
     except Exception as e:
         st.error(f"Error adding record: {e}")
 
-def scan_barcode(image):
-    """Scan barcode from an image."""
-    barcodes = decode(image)
-    for barcode in barcodes:
-        return barcode.data.decode("utf-8")
-    return None
-
 # Initialize session state
 if "page" not in st.session_state:
     st.session_state.page = "Add Product"
@@ -64,22 +54,48 @@ with col2:
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
 
-    # Camera input for barcode scanning
+    # JavaScript Barcode Scanner
     st.subheader("Scan Product EAN")
-    camera_image = st.camera_input("Scan a barcode using your mobile or laptop camera (choose back camera on mobile)")
-    
-    if camera_image:
-        # Process the captured image
-        image = Image.open(camera_image)
-        open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        scanned_ean = scan_barcode(open_cv_image)
+    components.html(
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+        </head>
+        <body>
+            <div id="reader" style="width: 300px; height: 300px;"></div>
+            <script>
+                function onScanSuccess(decodedText, decodedResult) {
+                    const eanField = window.parent.document.querySelector('input[placeholder="Enter or edit EAN Number manually"]');
+                    if (eanField) {
+                        eanField.value = decodedText;
+                        alert("Scanned EAN: " + decodedText);
+                    }
+                }
 
-        if scanned_ean:
-            st.success(f"Scanned EAN: {scanned_ean}")
-            st.session_state.scanned_ean = scanned_ean
-        else:
-            st.error("EAN not detected, enter it manually.")
-            st.session_state.scanned_ean = ""
+                function onScanError(error) {
+                    console.warn(`Code scan error = ${error}`);
+                }
+
+                const html5QrCode = new Html5Qrcode("reader");
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                    },
+                    onScanSuccess,
+                    onScanError
+                ).catch(err => {
+                    console.error("Unable to start scanner: ", err);
+                });
+            </script>
+        </body>
+        </html>
+        """,
+        height=400,
+    )
 
     # Form to add product
     with st.form("add_product_form", clear_on_submit=True):
