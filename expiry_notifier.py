@@ -47,6 +47,8 @@ def scan_barcode(image):
 # Initialize session state
 if "page" not in st.session_state:
     st.session_state.page = "Add Product"
+if "scanned_ean" not in st.session_state:
+    st.session_state.scanned_ean = ""
 
 # Sidebar navigation
 st.sidebar.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
@@ -62,28 +64,26 @@ with col2:
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
 
-    # Form to add product
-    with st.form("add_product_form", clear_on_submit=True):
-        # Camera input for barcode scanning
-        camera_image = st.camera_input(
-            "Scan a barcode using your mobile or laptop camera (choose back camera on mobile)"
-        )
-        
-        scanned_ean = None
+    # Camera input for barcode scanning
+    if st.button("Take Photo"):
+        camera_image = st.camera_input("Scan a barcode using your camera")
         if camera_image:
             # Process the captured image
             image = Image.open(camera_image)
             open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
             scanned_ean = scan_barcode(open_cv_image)
             if scanned_ean:
+                st.session_state.scanned_ean = scanned_ean
                 st.success(f"Scanned EAN: {scanned_ean}")
             else:
-                st.error("No valid barcode detected. Please try again.")
+                st.session_state.scanned_ean = ""
+                st.error("EAN not detected, enter it manually.")
 
-        # EAN Input Field
+    # Form to add product
+    with st.form("add_product_form", clear_on_submit=True):
         ean_no = st.text_input(
-            "Product EAN Number", 
-            value=scanned_ean if scanned_ean else "", 
+            "Product EAN Number",
+            value=st.session_state.scanned_ean,
             placeholder="Enter or edit EAN Number manually"
         )
         product_name = st.text_input("Product Name")
@@ -100,6 +100,7 @@ if st.session_state.page == "Add Product":
                 }
                 add_record(new_entry)
                 st.success("Product added successfully!")
+                st.session_state.scanned_ean = ""  # Reset after submission
             else:
                 st.error("Please fill in all fields.")
 
