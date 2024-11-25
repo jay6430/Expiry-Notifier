@@ -35,6 +35,8 @@ database = load_database()
 # Initialize session state for navigation
 if "page" not in st.session_state:
     st.session_state.page = "Add Product"
+if "scanned_ean" not in st.session_state:
+    st.session_state.scanned_ean = ""
 
 # Sidebar navigation with tiles
 st.sidebar.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
@@ -49,35 +51,38 @@ with col2:
 # Main App Logic
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
-    
-    # Start form context
+
+    # Camera input for barcode scanning
+    camera_image = st.camera_input(
+        "Scan a barcode using your mobile or laptop camera (choose back camera on mobile)"
+    )
+
+    if camera_image:
+        # Process the captured image
+        image = Image.open(camera_image)
+        open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        scanned_ean = scan_barcode(open_cv_image)
+
+        if scanned_ean:
+            st.success(f"Scanned EAN: {scanned_ean}")
+            st.session_state.scanned_ean = scanned_ean
+        else:
+            st.error("EAN not detected, enter it manually.")
+            st.session_state.scanned_ean = ""
+
+    # Form to add product details
     with st.form("add_product_form", clear_on_submit=True):
-        # Camera input for mobile or desktop
-        camera_image = st.camera_input(
-            "Scan a barcode using your mobile or laptop camera (choose back camera on mobile)"
+        ean_no = st.text_input(
+            "Product EAN Number", 
+            value=st.session_state.scanned_ean, 
+            placeholder="Enter or edit EAN Number manually"
         )
-
-        # Initialize EAN number
-        scanned_ean = None
-
-        if camera_image:
-            # Process the captured image
-            image = Image.open(camera_image)
-            open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-            scanned_ean = scan_barcode(open_cv_image)
-            if scanned_ean:
-                st.success(f"Scanned EAN: {scanned_ean}")
-            else:
-                st.error("No valid barcode detected. Please try again.")
-        
-        # EAN Input Field
-        ean_no = st.text_input("Product EAN Number", value=scanned_ean if scanned_ean else "", placeholder="Enter or edit EAN Number manually")
         product_name = st.text_input("Product Name", placeholder="Enter Product Name")
         expiry_date = st.date_input("Expiry Date")
-        
+
         # Submit button inside form context
         submit = st.form_submit_button("Add Product")
-        
+
         if submit:
             if ean_no and product_name:
                 timestamp = datetime.now()
@@ -92,7 +97,7 @@ if st.session_state.page == "Add Product":
                 st.success("Product added successfully!")
             else:
                 st.error("Please fill in all fields.")
-    
+
 elif st.session_state.page == "View Database":
     st.title("Product Database")
     
