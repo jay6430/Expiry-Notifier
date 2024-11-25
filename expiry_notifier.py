@@ -65,19 +65,21 @@ if st.session_state.page == "Add Product":
     st.title("Add New Product")
 
     # Camera input for barcode scanning
-    if st.button("Take Photo"):
-        camera_image = st.camera_input("Scan a barcode using your camera")
-        if camera_image:
-            # Process the captured image
-            image = Image.open(camera_image)
-            open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-            scanned_ean = scan_barcode(open_cv_image)
-            if scanned_ean:
-                st.session_state.scanned_ean = scanned_ean
-                st.success(f"Scanned EAN: {scanned_ean}")
-            else:
-                st.session_state.scanned_ean = ""
-                st.error("EAN not detected, enter it manually.")
+    st.subheader("Scan Product EAN")
+    camera_image = st.camera_input("Scan a barcode using your mobile or laptop camera (choose back camera on mobile)")
+    
+    if camera_image:
+        # Process the captured image
+        image = Image.open(camera_image)
+        open_cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        scanned_ean = scan_barcode(open_cv_image)
+
+        if scanned_ean:
+            st.success(f"Scanned EAN: {scanned_ean}")
+            st.session_state.scanned_ean = scanned_ean
+        else:
+            st.error("EAN not detected, enter it manually.")
+            st.session_state.scanned_ean = ""
 
     # Form to add product
     with st.form("add_product_form", clear_on_submit=True):
