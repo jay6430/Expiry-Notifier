@@ -54,48 +54,50 @@ with col2:
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
 
-    # JavaScript Barcode Scanner
-    st.subheader("Scan Product EAN")
-    components.html(
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-        </head>
-        <body>
-            <div id="reader" style="width: 300px; height: 300px;"></div>
-            <script>
-                function onScanSuccess(decodedText, decodedResult) {
-                    const eanField = window.parent.document.querySelector('input[placeholder="Enter or edit EAN Number manually"]');
-                    if (eanField) {
-                        eanField.value = decodedText;
-                        alert("Scanned EAN: " + decodedText);
+    # Scan EAN Button
+    if st.button("Scan EAN"):
+        st.session_state.scanned_ean = ""  # Reset before scanning
+        components.html(
+            """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+            </head>
+            <body>
+                <div id="reader" style="width: 300px; height: 300px;"></div>
+                <script>
+                    function onScanSuccess(decodedText, decodedResult) {
+                        const scannedEANField = window.parent.document.querySelector('input[placeholder="Enter or edit EAN Number manually"]');
+                        if (scannedEANField) {
+                            scannedEANField.value = decodedText;
+                            window.parent.postMessage(decodedText, "*");
+                        }
+                        html5QrCode.stop();
                     }
-                }
 
-                function onScanError(error) {
-                    console.warn(`Code scan error = ${error}`);
-                }
+                    function onScanError(error) {
+                        console.warn(`Code scan error = ${error}`);
+                    }
 
-                const html5QrCode = new Html5Qrcode("reader");
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                    },
-                    onScanSuccess,
-                    onScanError
-                ).catch(err => {
-                    console.error("Unable to start scanner: ", err);
-                });
-            </script>
-        </body>
-        </html>
-        """,
-        height=400,
-    )
+                    const html5QrCode = new Html5Qrcode("reader");
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                        },
+                        onScanSuccess,
+                        onScanError
+                    ).catch(err => {
+                        console.error("Unable to start scanner: ", err);
+                    });
+                </script>
+            </body>
+            </html>
+            """,
+            height=400,
+        )
 
     # Form to add product
     with st.form("add_product_form", clear_on_submit=True):
