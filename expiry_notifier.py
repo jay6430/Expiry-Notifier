@@ -39,6 +39,8 @@ if "page" not in st.session_state:
     st.session_state.page = "Add Product"
 if "scanned_ean" not in st.session_state:
     st.session_state.scanned_ean = ""
+if "scanner_active" not in st.session_state:
+    st.session_state.scanner_active = True
 
 # Sidebar navigation
 st.sidebar.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
@@ -54,9 +56,9 @@ with col2:
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
 
-    # Scan EAN Button
-    if st.button("Scan EAN"):
-        st.session_state.scanned_ean = ""  # Reset before scanning
+    # JavaScript Barcode Scanner
+    st.subheader("Scan Product EAN")
+    if st.session_state.scanner_active:
         components.html(
             """
             <!DOCTYPE html>
@@ -68,12 +70,11 @@ if st.session_state.page == "Add Product":
                 <div id="reader" style="width: 300px; height: 300px;"></div>
                 <script>
                     function onScanSuccess(decodedText, decodedResult) {
-                        const scannedEANField = window.parent.document.querySelector('input[placeholder="Enter or edit EAN Number manually"]');
-                        if (scannedEANField) {
-                            scannedEANField.value = decodedText;
-                            window.parent.postMessage(decodedText, "*");
+                        const eanField = window.parent.document.querySelector('input[placeholder="Enter or edit EAN Number manually"]');
+                        if (eanField) {
+                            eanField.value = decodedText;
+                            window.parent.postMessage({ type: 'EAN_DETECTED', ean: decodedText }, '*');
                         }
-                        html5QrCode.stop();
                     }
 
                     function onScanError(error) {
@@ -92,12 +93,29 @@ if st.session_state.page == "Add Product":
                     ).catch(err => {
                         console.error("Unable to start scanner: ", err);
                     });
+
+                    // Listen for messages from parent to stop scanner
+                    window.addEventListener('message', (event) => {
+                        if (event.data.type === 'STOP_SCANNER') {
+                            html5QrCode.stop().then(() => {
+                                console.log("Scanner stopped");
+                            }).catch(err => {
+                                console.error("Failed to stop scanner: ", err);
+                            });
+                        }
+                    });
                 </script>
             </body>
             </html>
             """,
             height=400,
         )
+
+    # Handle scanner EAN detection
+    query_params = st.query_params
+    if "ean" in query_params:
+        st.session_state.scanned_ean = query_params["ean"]
+        st.session_state.scanner_active = False
 
     # Form to add product
     with st.form("add_product_form", clear_on_submit=True):
@@ -121,6 +139,7 @@ if st.session_state.page == "Add Product":
                 add_record(new_entry)
                 st.success("Product added successfully!")
                 st.session_state.scanned_ean = ""  # Reset after submission
+                st.session_state.scanner_active = True  # Reactivate scanner
             else:
                 st.error("Please fill in all fields.")
 
