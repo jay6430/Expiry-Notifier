@@ -35,12 +35,8 @@ def add_record(data):
         st.error(f"Error adding record: {e}")
 
 # Initialize session state
-if "page" not in st.session_state:
-    st.session_state.page = "Add Product"
 if "scanned_ean" not in st.session_state:
     st.session_state.scanned_ean = ""
-if "scanner_active" not in st.session_state:
-    st.session_state.scanner_active = True
 
 # Sidebar navigation
 st.sidebar.markdown("<h2 style='text-align: center;'>Navigation</h2>", unsafe_allow_html=True)
@@ -53,76 +49,61 @@ with col2:
         st.session_state.page = "View Database"
 
 # Main App Logic
+if "page" not in st.session_state:
+    st.session_state.page = "Add Product"
+
 if st.session_state.page == "Add Product":
     st.title("Add New Product")
 
-    # JavaScript Barcode Scanner
+    # JavaScript QR Code Scanner
     st.subheader("Scan Product EAN")
-    if st.session_state.scanner_active:
-        components.html(
-            """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-            </head>
-            <body>
-                <div id="reader" style="width: 300px; height: 300px;"></div>
-                <script>
-                    function onScanSuccess(decodedText, decodedResult) {
-                        const eanField = window.parent.document.querySelector('input[placeholder="Enter or edit EAN Number manually"]');
-                        if (eanField) {
-                            eanField.value = decodedText;
-                            window.parent.postMessage({ type: 'EAN_DETECTED', ean: decodedText }, '*');
-                        }
-                    }
+    components.html(
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+        </head>
+        <body>
+            <h1 style="font-family: Arial, sans-serif; color: white;">QR Code Reader</h1>
+            <div class="row">
+                <div class="col">
+                    <div id="reader"></div>
+                </div>
+                <div class="col" style="padding: 30px">
+            <h4 style="font-family: Arial, sans-serif; color: white;">Scan Result</h4>
+            <div id="result" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f0f0f0;">Result goes here</div>    </div>
+            </div>
+            <script>
+                function onScanSuccess(qrCodeMessage) {
+                    // Update the scan result in the HTML
+                    document.getElementById("result").innerHTML =
+                        '<span class="result">' + qrCodeMessage + "</span>";
+                }
 
-                    function onScanError(error) {
-                        console.warn(`Code scan error = ${error}`);
-                    }
+                function onScanError(errorMessage) {
+                    console.warn("Scan error:", errorMessage);
+                }
 
-                    const html5QrCode = new Html5Qrcode("reader");
-                    html5QrCode.start(
-                        { facingMode: "environment" },
-                        {
-                            fps: 10,
-                            qrbox: { width: 250, height: 250 },
-                        },
-                        onScanSuccess,
-                        onScanError
-                    ).catch(err => {
-                        console.error("Unable to start scanner: ", err);
-                    });
-
-                    // Listen for messages from parent to stop scanner
-                    window.addEventListener('message', (event) => {
-                        if (event.data.type === 'STOP_SCANNER') {
-                            html5QrCode.stop().then(() => {
-                                console.log("Scanner stopped");
-                            }).catch(err => {
-                                console.error("Failed to stop scanner: ", err);
-                            });
-                        }
-                    });
-                </script>
-            </body>
-            </html>
-            """,
-            height=400,
-        )
-
-    # Handle scanner EAN detection
-    query_params = st.query_params
-    if "ean" in query_params:
-        st.session_state.scanned_ean = query_params["ean"]
-        st.session_state.scanner_active = False
+                const html5QrCodeScanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: 250
+                });
+                html5QrCodeScanner.render(onScanSuccess, onScanError);
+            </script>
+        </body>
+        </html>
+        """,
+        height=800,
+    )
 
     # Form to add product
     with st.form("add_product_form", clear_on_submit=True):
         ean_no = st.text_input(
             "Product EAN Number",
             value=st.session_state.scanned_ean,
-            placeholder="Enter or edit EAN Number manually"
+            key="scanned_ean_field",
+            placeholder="Enter or scan EAN"
         )
         product_name = st.text_input("Product Name")
         expiry_date = st.date_input("Expiry Date")
@@ -139,7 +120,6 @@ if st.session_state.page == "Add Product":
                 add_record(new_entry)
                 st.success("Product added successfully!")
                 st.session_state.scanned_ean = ""  # Reset after submission
-                st.session_state.scanner_active = True  # Reactivate scanner
             else:
                 st.error("Please fill in all fields.")
 
