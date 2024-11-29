@@ -53,10 +53,9 @@ if "page" not in st.session_state:
     st.session_state.page = "Add Product"
 
 if st.session_state.page == "Add Product":
-    st.title("Add New Product")
+    st.title("U2RZ - Article Submission")
 
-    # JavaScript QR Code Scanner
-    st.subheader("Scan Product EAN")
+    # JavaScript QR Code Scanner with improved styling and behavior
     components.html(
         """
         <!DOCTYPE html>
@@ -64,37 +63,88 @@ if st.session_state.page == "Add Product":
         <head>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
         </head>
-        <body>
-            <h1 style="font-family: Arial, sans-serif; color: white;">QR Code Reader</h1>
-            <div class="row">
-                <div class="col">
-                    <div id="reader"></div>
+        <body style="font-family: Arial, sans-serif; background-color: #333; color: #f5f5f5;">
+            <h1>Scan EAN Barcode</h1>
+            <div style="display: flex; justify-content: center; margin-top: 20px;">
+                <!-- Reader container with styled border -->
+                <div id="reader" style="
+                    width: 500px; 
+                    height: 450px;
+                    border: 5px solid white; 
+                    border-radius: 10px; 
+                    position: relative; 
+                    background: black;">
                 </div>
-                <div class="col" style="padding: 30px">
-            <h4 style="font-family: Arial, sans-serif; color: white;">Scan Result</h4>
-            <div id="result" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f0f0f0;">Result goes here</div>    </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <h4>Scan Result</h4>
+                <div id="result" style="
+                    padding: 15px; 
+                    border: 2px solid #ccc; 
+                    border-radius: 5px; 
+                    background-color: #f5f5f5; 
+                    color: #333; 
+                    font-size: 18px; 
+                    word-wrap: break-word; 
+                    display: inline-block;">Result goes here</div>
+                <button id="copyEANButton" onclick="copyEAN()" style="
+                    padding: 10px 20px; 
+                    margin-top: 10px; 
+                    font-size: 16px; 
+                    background-color: #4CAF50; 
+                    color: white; 
+                    border: none; 
+                    border-radius: 5px; 
+                    cursor: pointer;">Copy EAN</button>
+                <div id="copyMessage" style="
+                    margin-top: 10px; 
+                    font-size: 14px; 
+                    color: #4CAF50; 
+                    display: none;">EAN copied to clipboard!</div>
             </div>
             <script>
                 function onScanSuccess(qrCodeMessage) {
-                    // Update the scan result in the HTML
+                    // Change border to green on success
+                    const readerElement = document.getElementById("reader");
+                    readerElement.style.border = "5px solid green";
+                    
+                    // Update the scan result
                     document.getElementById("result").innerHTML =
-                        '<span class="result">' + qrCodeMessage + "</span>";
+                        '<span>' + qrCodeMessage + "</span>";
                 }
 
                 function onScanError(errorMessage) {
                     console.warn("Scan error:", errorMessage);
                 }
 
+                // Render the QR code scanner with customized box
                 const html5QrCodeScanner = new Html5QrcodeScanner("reader", {
                     fps: 10,
-                    qrbox: 250
+                    qrbox: { width: 250, height: 200 }
                 });
                 html5QrCodeScanner.render(onScanSuccess, onScanError);
+
+                function copyEAN() {
+                    const ean = document.getElementById("result").innerText;
+                    const copyMessage = document.getElementById("copyMessage");
+                    if (ean) {
+                        navigator.clipboard.writeText(ean).then(function() {
+                            // Show success message
+                            copyMessage.style.display = "block";
+                            setTimeout(() => { copyMessage.style.display = "none"; }, 2000);
+                        }).catch(function(error) {
+                            copyMessage.style.color = "red";
+                            copyMessage.innerText = "Failed to copy EAN!";
+                            copyMessage.style.display = "block";
+                            setTimeout(() => { copyMessage.style.display = "none"; }, 2000);
+                        });
+                    }
+                }
             </script>
         </body>
         </html>
         """,
-        height=800,
+        height=730,
     )
 
     # Form to add product
