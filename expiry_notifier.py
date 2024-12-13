@@ -251,69 +251,62 @@ if st.session_state.page == "Modify Database":
                           options=["Update Record", "Delete Record"], 
                           key="operation_choice")
 
-    # EAN field for searching
-    ean_value = st.text_input("Enter EAN to search:").strip()
+    # Fetch all records from the database
+    records = list(collection.find({}, {"_id": 0}))
 
-    if ean_value:
-        # Fetch matching records from the database
-        query = {"EAN_No": str(ean_value)}  # Convert EAN to string to match MongoDB format
-        records = list(collection.find(query, {"_id": 0}))
+    if records:
+        # Prepare dropdown options with combined text of EAN_No and product_name
+        dropdown_options = [
+            {"EAN_No": rec["EAN_No"], "product_name": rec["product_name"], "record": rec, "display": f"{rec['EAN_No']} {rec['product_name']}"}
+            for rec in records
+        ]
+        dropdown_labels = [opt["display"] for opt in dropdown_options]
 
-        if records:
-            df = pd.DataFrame(records)
-            st.dataframe(df)
+        if operation == "Update Record":
+            # Dropdown for updating a single record
+            selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
+            selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
 
-            if operation == "Update Record":
-                # Select a single record for updating
-                record_to_update = st.selectbox(
-                    "Select a record to update", 
-                    options=records, 
-                    format_func=lambda x: f"EAN: {x['EAN_No']}, Name: {x['product_name']}"
-                )
+            if selected_record:
+                # Show editable fields
+                updated_record = {
+                    "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
+                    "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
+                    "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
+                    "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
+                    "family": st.text_input("Family", value=selected_record.get("family", "")),
+                    "class": st.text_input("Class", value=selected_record.get("class", "")),
+                    "expiry_date": st.text_input("Expiry Date", value=selected_record["expiry_date"])
+                }
 
-                if record_to_update:
-                    # Show editable fields
-                    updated_record = {
-                        "EAN_No": st.text_input("EAN", value=record_to_update["EAN_No"]),
-                        "product_name": st.text_input("Product Name", value=record_to_update["product_name"]),
-                        "article_number": st.text_input("Article Number", value=record_to_update.get("article_number", "")),
-                        "segment": st.text_input("Segment", value=record_to_update.get("segment", "")),
-                        "family": st.text_input("Family", value=record_to_update.get("family", "")),
-                        "class": st.text_input("Class", value=record_to_update.get("class", "")),
-                        "expiry_date": st.text_input("Expiry Date", value=record_to_update["expiry_date"])
-                    }
+                # Confirm and update record
+                if st.button("Modify Record"):
+                    try:
+                        collection.update_one(
+                            {"EAN_No": selected_record["EAN_No"]},
+                            {"$set": updated_record}
+                        )
+                        st.success("Record updated successfully!")
+                    except Exception as e:
+                        st.error(f"Error updating record: {e}")
 
-                    # Confirm and update record
-                    if st.button("Modify Record"):
-                        try:
-                            collection.update_one(
-                                {"EAN_No": record_to_update["EAN_No"]},
-                                {"$set": updated_record}
-                            )
-                            st.success("Record updated successfully!")
-                        except Exception as e:
-                            st.error(f"Error updating record: {e}")
+        elif operation == "Delete Record":
+            # Dropdown for deleting multiple records
+            selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
+            selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
 
-            elif operation == "Delete Record":
-                # Allow user to select multiple records to delete
-                records_to_delete = st.multiselect(
-                    "Select records to delete", 
-                    options=records, 
-                    format_func=lambda x: f"EAN: {x['EAN_No']}, Name: {x['product_name']}"
-                )
-
-                if records_to_delete:
-                    if st.button("Delete Selected Record(s)"):
-                        try:
-                            delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in records_to_delete]}
-                            collection.delete_many(delete_query)
-                            st.success("Selected records deleted successfully!")
-                        except Exception as e:
-                            st.error(f"Error deleting records: {e}")
-        else:
-            st.warning(f"No records found for EAN: {ean_value}")
+            if selected_records:
+                if st.button("Delete Selected Record(s)"):
+                    try:
+                        delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                        collection.delete_many(delete_query)
+                        st.success("Selected records deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting records: {e}")
     else:
-        st.info("Enter an EAN to search.")
+        st.warning("No records found in the database.")
+
+
 
 
 
