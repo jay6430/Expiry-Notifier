@@ -160,12 +160,14 @@ def load_products():
         st.error(f"Error loading products: {e}")
         return []
 
-def add_product(data):
-    """Insert a new product record into the Products collection."""
+
+def add_product(data, collection):
+    """Insert a new product record into the specified collection."""
     try:
-        products_collection.insert_one(data)
+        collection.insert_one(data)
     except Exception as e:
         st.error(f"Error adding product: {e}")
+
 
 def fetch_inventory_details(ean):
     """Fetch details from the Inventory collection based on EAN."""
