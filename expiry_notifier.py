@@ -3,7 +3,6 @@ import pandas as pd
 from pymongo import MongoClient, errors
 from datetime import datetime
 import streamlit.components.v1 as components
-from streamlit_option_menu import option_menu
 import matplotlib.pyplot as plt
 import plotly.express as px
 import pandas as pd
