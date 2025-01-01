@@ -68,7 +68,7 @@ html_component="""
             <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
         </head>
         <body style="font-family: Arial, sans-serif; background-color: #333; color: #f5f5f5;">
-            <h1>Scan EAN Barcode</h1>
+            <h4>Scan EAN Barcode</h4>
             <div style="display: flex; justify-content: center; margin-top: 20px;">
                 <!-- Reader container with styled border -->
                 <div id="reader" style="
