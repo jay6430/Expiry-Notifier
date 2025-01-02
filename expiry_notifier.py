@@ -149,6 +149,14 @@ html_component="""
 
 
 # MongoDB helper functions
+def load_products():
+    """Load all product records from the Products collection."""
+    try:
+        records = list(products_collection.find({}, {"_id": 0}))  # Exclude MongoDB ID
+        return records
+    except Exception as e:
+        st.error(f"Error loading products: {e}")
+        return []
 
 
 def add_product(data, collection):
@@ -517,8 +525,8 @@ elif st.session_state.page == "Dashboard":
         dashboard_type = st.radio(
             "Select Dashboard Type:", 
             options=["Segment", "Family"], 
-            index=0 ,
-            key="Expiry Products Scanning Status"
+            index=0 , 
+            key="Expiry Products Scanning Status",
         )
 
         if dashboard_type == "Segment":
