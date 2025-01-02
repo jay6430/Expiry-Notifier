@@ -3,7 +3,6 @@ import pandas as pd
 from pymongo import MongoClient, errors
 from datetime import datetime
 import streamlit.components.v1 as components
-import matplotlib.pyplot as plt
 import plotly.express as px
 import pandas as pd
 
@@ -150,14 +149,6 @@ html_component="""
 
 
 # MongoDB helper functions
-def load_products():
-    """Load all product records from the Products collection."""
-    try:
-        records = list(products_collection.find({}, {"_id": 0}))  # Exclude MongoDB ID
-        return records
-    except Exception as e:
-        st.error(f"Error loading products: {e}")
-        return []
 
 
 def add_product(data, collection):
@@ -178,14 +169,21 @@ def fetch_inventory_details(ean):
 
 
 # Function to get unique segments or families from the Products collection
-def get_unique_values(field):
+def get_unique_values_product_collection(field):
     try:
         values = sorted({rec.get(field, "") for rec in products_collection.find({}, {field: 1})})
         return values
     except Exception as e:
         st.error(f"Error fetching unique {field}s: {e}")
         return []
-
+# Function to get unique segments or families from the Products collection
+def get_unique_values_product_count_collection(field):
+    try:
+        values = sorted({rec.get(field, "") for rec in product_count_collection.find({}, {field: 1})})
+        return values
+    except Exception as e:
+        st.error(f"Error fetching unique {field}s: {e}")
+        return []
 
 # Function to fetch the inventory data for the selected segment or family
 def fetch_inventory_for_value(field, value):
@@ -206,6 +204,25 @@ def fetch_products_for_value(field, value):
         st.error(f"Error fetching products for {field} '{value}': {e}")
         return []
 
+
+# Function to fetch the products count data for the selected segment or family
+def fetch_products_count_for_value(field, value):
+    try:
+        query = {field: value}
+        return list(product_count_collection.find(query, {"EAN_No": 1, "product_name": 1, "_id": 0}))
+    except Exception as e:
+        st.error(f"Error fetching products for {field} '{value}': {e}")
+        return []
+
+
+# Function to fetch the products count data for the selected segment or family
+def fetch_products_count_for_value(field, value):
+    try:
+        query = {field: value}
+        return list(product_count_collection.find(query, {"EAN_No": 1, "product_name": 1, "_id": 0}))
+    except Exception as e:
+        st.error(f"Error fetching products for {field} '{value}': {e}")
+        return []
 
 
 
@@ -231,9 +248,8 @@ st.sidebar.caption("Manage your inventory with ease.")
 # Use page_link to create navigation
 pages = {
     "Add Product": "➕ Add Product",
-    "View Database": "📋 View Database",
     "Modify Database": "✏️ Modify Database",
-    "Expiry Notifier Dashboard" : "Expiry Notifier Dashboard",
+    "Dashboard" : "✨Dashboard",
 }
 
 selected_page = st.sidebar.radio(
@@ -255,38 +271,38 @@ st.session_state.page = list(pages.keys())[list(pages.values()).index(selected_p
 if st.session_state.page == "Add Product":
     st.title("Add Product")
 
+    # JavaScript QR Code Scanner (Common for both tabs)
+    st.subheader("QR Code Scanner")
+    components.html(
+        html_component,
+        height=730,
+    )
+
+    # Input EAN (Common for both tabs)
+    ean_no = st.text_input("Product EAN Number", key="scanned_ean_field", placeholder="Enter or scan EAN")
+    if st.button("Fetch Details"):
+        if ean_no:
+            details = fetch_inventory_details(ean_no)
+            if details:
+                # Populate session state
+                st.session_state.product_details.update({
+                    "product_name": details.get("Material_description", ""),
+                    "article_num": details.get("Article_num", ""),
+                    "segment": details.get("Segment", ""),
+                    "family": details.get("Family", ""),
+                    "prod_class": details.get("Class", ""),
+                })
+                st.success("Details fetched successfully!")
+            else:
+                st.warning("Details not found in the inventory.")
+        else:
+            st.warning("Please enter a valid EAN number.")
+
     # Tab layout for "Add Product for expiry" and "Add Product for count"
     tab1, tab2 = st.tabs(["Add Product for Expiry", "Add Product for Count"])
 
     with tab1:
         st.subheader("Add Product for Expiry")
-
-        # JavaScript QR Code Scanner
-        components.html(
-            html_component,
-            height=730,
-        )
-
-        # Input EAN
-        ean_no = st.text_input("Product EAN Number", key="scanned_ean_field_tab2", placeholder="Enter or scan EAN")
-        if st.button("Fetch Details_tab1"):
-            if ean_no:
-                details = fetch_inventory_details(ean_no)
-                if details:
-                    # Populate session state
-                    st.session_state.product_details.update({
-                        "product_name": details.get("Material_description", ""),
-                        "article_num": details.get("Article_num", ""),
-                        "segment": details.get("Segment", ""),
-                        "family": details.get("Family", ""),
-                        "prod_class": details.get("Class", ""),
-                    })
-                    st.success("Details fetched successfully!")
-                else:
-                    st.warning("Details not found in the inventory.")
-            else:
-                st.warning("Please enter a valid EAN number.")
-
 
         # Form for submitting product details
         with st.form("add_product_form", clear_on_submit=True):
@@ -334,33 +350,6 @@ if st.session_state.page == "Add Product":
     with tab2:
         st.subheader("Add Product for Count")
 
-        # JavaScript QR Code Scanner
-        components.html(
-            html_component,
-            height=730,
-        )
-
-        # Input EAN
-        ean_no = st.text_input("Product EAN Number", key="scanned_ean_field_tab1", placeholder="Enter or scan EAN")
-        if st.button("Fetch Details_tab2"):
-            if ean_no:
-                details = fetch_inventory_details(ean_no)
-                if details:
-                    # Populate session state
-                    st.session_state.product_details.update({
-                        "product_name": details.get("Material_description", ""),
-                        "article_num": details.get("Article_num", ""),
-                        "segment": details.get("Segment", ""),
-                        "family": details.get("Family", ""),
-                        "prod_class": details.get("Class", ""),
-                    })
-                    st.success("Details fetched successfully!")
-                else:
-                    st.warning("Details not found in the inventory.")
-            else:
-                st.warning("Please enter a valid EAN number.")
-
-
         # Form for submitting product details (for count)
         with st.form("add_product_count_form", clear_on_submit=True):
             product_name = st.text_input(
@@ -403,6 +392,7 @@ if st.session_state.page == "Add Product":
                     st.success("Product count added successfully!")
                 else:
                     st.error("Please fill in all mandatory fields.")
+
 
 
 
@@ -513,116 +503,189 @@ elif st.session_state.page == "Modify Database":
 
 
 
-# Expiry Notifier Dashboard Page
-elif st.session_state.page == "Expiry Notifier Dashboard":
-    st.title("Expiry Notifier Dashboard")
-    
-    # Tab layout for Segment Dashboard, Family Dashboard, and Near Expiry Dashboard
-    tab1, tab2, tab3 = st.tabs(["Segment Dashboard", "Family Dashboard", "Near Expiry Dashboard"])
+# Dashboard Page
+elif st.session_state.page == "Dashboard":
+    st.title("Dashboard")
+
+    # Tab layout for Expiry Products Scanning Status, Near Expiry Dashboard, and Raw Data
+    tab1, tab2, tab3, tab4 = st.tabs(["Expiry Products Scanning Status", "Product Count Scanning Status", "Near Expiry Dashboard", "Raw Data"])
 
     with tab1:
-        st.subheader("Segment Dashboard (Scanning status)")
-        
-        # Dropdown to select segment
-        unique_segments = get_unique_values("segment")
-        selected_segment = st.selectbox("Select Segment", options=unique_segments)
+        st.subheader("Expiry Products Scanning Status")
 
-        if selected_segment:
-            # Fetch data for selected segment
-            inventory_data = fetch_inventory_for_value("Segment", selected_segment)
-            products_data = fetch_products_for_value("segment", selected_segment)
+        # User input to select between Segment or Family
+        dashboard_type = st.radio(
+            "Select Dashboard Type:", 
+            options=["Segment", "Family"], 
+            index=0 ,
+            key="Expiry Products Scanning Status"
+        )
 
-            # Count of products in the inventory vs. products in products collection
-            total_inventory_products = len(inventory_data)
-            scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
-            remaining_products = total_inventory_products - scanned_products
+        if dashboard_type == "Segment":
+            # Segment Dashboard Logic
+            unique_segments = get_unique_values_product_collection("segment")
+            selected_segment = st.selectbox("Select Segment", options=unique_segments)
 
-            # Calculate scanned vs remaining percentage
-            scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
-            remaining_percentage = 100 - scanned_percentage
+            if selected_segment:
+                inventory_data = fetch_inventory_for_value("Segment", selected_segment)
+                products_data = fetch_products_for_value("segment", selected_segment)
 
-            # Plot the percentage graph
-            fig = px.pie(
-                names=["Scanned", "Remaining"],
-                values=[scanned_percentage, remaining_percentage],
-                title=f"Product Scanned vs Remaining in {selected_segment}",
-                hole=0.3
-            )
-            st.plotly_chart(fig)
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
 
-            # Display remaining products in tabular form
-            remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
-            
-            if remaining_products_data:
-                remaining_df = pd.DataFrame(remaining_products_data)
-                st.write(f"**Remaining Products in {selected_segment}**")
-                st.dataframe(remaining_df)
-            else:
-                st.info(f"All products in segment '{selected_segment}' are already scanned.")
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_segment}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_segment}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in segment '{selected_segment}' are already scanned.")
+
+        elif dashboard_type == "Family":
+            # Family Dashboard Logic
+            unique_families = get_unique_values_product_collection("family")
+            selected_family = st.selectbox("Select Family", options=unique_families)
+
+            if selected_family:
+                inventory_data = fetch_inventory_for_value("Family", selected_family)
+                products_data = fetch_products_for_value("family", selected_family)
+
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
+
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_family}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_family}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in family '{selected_family}' are already scanned.")
 
     with tab2:
-        st.subheader("Family Dashboard (Scanning status)")
-        
-        # Dropdown to select family
-        unique_families = get_unique_values("family")
-        selected_family = st.selectbox("Select Family", options=unique_families)
+        st.subheader("Product Count Scanning Status")
 
-        if selected_family:
-            # Fetch data for selected family
-            inventory_data = fetch_inventory_for_value("Family", selected_family)  # Fetching inventory by family
-            products_data = fetch_products_for_value("family", selected_family)  # Fetching products by family
+                # User input to select between Segment or Family
+        dashboard_type = st.radio(
+            "Select Dashboard Type:", 
+            options=["Segment", "Family"], 
+            index=0,
+            key="Product Count Scanning Status"
+        )
 
-            # Count of products in the inventory vs. products in products collection
-            total_inventory_products = len(inventory_data)
-            scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
-            remaining_products = total_inventory_products - scanned_products
+        if dashboard_type == "Segment":
+            # Segment Dashboard Logic
+            unique_segments = get_unique_values_product_count_collection("segment")
+            selected_segment = st.selectbox("Select Segment", options=unique_segments)
 
-            # Calculate scanned vs remaining percentage
-            scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
-            remaining_percentage = 100 - scanned_percentage
+            if selected_segment:
+                inventory_data = fetch_inventory_for_value("Segment", selected_segment)
+                products_data = fetch_products_count_for_value("segment", selected_segment)
 
-            # Plot the percentage graph
-            fig = px.pie(
-                names=["Scanned", "Remaining"],
-                values=[scanned_percentage, remaining_percentage],
-                title=f"Product Scanned vs Remaining in {selected_family}",
-                hole=0.3
-            )
-            st.plotly_chart(fig)
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
 
-            # Display remaining products in tabular form
-            remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
-            
-            if remaining_products_data:
-                remaining_df = pd.DataFrame(remaining_products_data)
-                st.write(f"**Remaining Products in {selected_family}**")
-                st.dataframe(remaining_df)
-            else:
-                st.info(f"All products in family '{selected_family}' are already scanned.")
-    
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_segment}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_segment}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in segment '{selected_segment}' are already scanned.")
+
+        elif dashboard_type == "Family":
+            # Family Dashboard Logic
+            unique_families = get_unique_values_product_count_collection("family")
+            selected_family = st.selectbox("Select Family", options=unique_families)
+
+            if selected_family:
+                inventory_data = fetch_inventory_for_value("Family", selected_family)
+                products_data = fetch_products_count_for_value("family", selected_family)
+
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
+
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_family}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_family}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in family '{selected_family}' are already scanned.")
+
+
+
+
+
     with tab3:
         st.subheader("Near Expiry Dashboard")
-        
-        # Dropdown to select expiry range
+
         expiry_range = st.selectbox("Select Expiry Range", options=[15, 20, 30], index=0)
         today = pd.to_datetime("today")
         expiry_date_limit = today + pd.Timedelta(days=expiry_range)
 
-        # Fetch products that are going to expire in the next selected days
         products_data = list(products_collection.find({
             "expiry_date": {"$lte": expiry_date_limit.strftime("%d/%m/%Y")}
         }))
-        
-        # Calculate the percentage of products near expiry vs remaining products
+
         total_products = len(products_data)
         expiring_products = len([prod for prod in products_data if pd.to_datetime(prod["expiry_date"], format="%d/%m/%Y") <= expiry_date_limit])
         remaining_products = total_products - expiring_products
 
-        # Calculate expiring vs remaining percentage
         expiring_percentage = (expiring_products / total_products) * 100 if total_products > 0 else 0
         remaining_percentage = 100 - expiring_percentage
 
-        # Plot the percentage graph
         fig = px.pie(
             names=["Expiring", "Remaining"],
             values=[expiring_percentage, remaining_percentage],
@@ -631,9 +694,8 @@ elif st.session_state.page == "Expiry Notifier Dashboard":
         )
         st.plotly_chart(fig)
 
-        # Display the products expiring in the selected range
         expiring_products_data = [prod for prod in products_data if pd.to_datetime(prod["expiry_date"], format="%d/%m/%Y") <= expiry_date_limit]
-        
+
         if expiring_products_data:
             expiring_df = pd.DataFrame(expiring_products_data)
             st.write(f"**Products Expiring in Next {expiry_range} Days**")
@@ -641,11 +703,69 @@ elif st.session_state.page == "Expiry Notifier Dashboard":
         else:
             st.info(f"No products are expiring in the next {expiry_range} days.")
 
+    with tab4:
+        st.subheader("Raw Data")
+
+        # User input to select collection
+        selected_collection = st.radio(
+            "Select Collection:", 
+            options=["Scanned products for Expiry", "Scanned products for Count"], 
+            index=0
+        )
+
+        # Map collection names to actual collections
+        collection_map = {
+            "Scanned products for Expiry": products_collection,
+            "Scanned products for Count": product_count_collection
+        }
+        collection = collection_map[selected_collection]
+
+        # User input to filter data
+        filter_option = st.selectbox("Filter By:", options=["All Data", "Segment", "Family"], index=0)
+
+        if filter_option == "All Data":
+            # Display all data
+            data = list(collection.find({}, {"_id": 0}))  # Exclude the `_id` field explicitly
+            if data:
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+            else:
+                st.info("No data available in the selected collection.")
 
 
-elif st.session_state.page == "View Database":
-    df = pd.DataFrame(load_products())
-    if not df.empty:
-        st.dataframe(df)
-    else:
-        st.info("No data found.")
+
+
+        elif filter_option == "Segment":
+            # Filter by segment
+            if selected_collection == "Scanned products for Expiry":
+                unique_segments = get_unique_values_product_collection("segment")
+            elif selected_collection == "Scanned products for Count":
+                unique_segments = get_unique_values_product_count_collection("segment")
+
+            selected_segment = st.selectbox("Select Segment", options=unique_segments, key="segment_filter")
+
+            if selected_segment:
+                data = list(collection.find({"segment": selected_segment}))
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info(f"No data found for segment '{selected_segment}'.")
+
+        elif filter_option == "Family":
+            # Filter by family
+            if selected_collection == "Scanned products for Expiry":
+                unique_families = get_unique_values_product_collection("family")
+            elif selected_collection == "Scanned products for Count":
+                unique_families = get_unique_values_product_count_collection("family")
+
+            selected_family = st.selectbox("Select Family", options=unique_families, key="family_filter")
+
+            if selected_family:
+                data = list(collection.find({"family": selected_family}))
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info(f"No data found for family '{selected_family}'.")
+

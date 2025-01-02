@@ -1,9 +1,5 @@
 streamlit
 pandas
-Pillow
 numpy
-opencv-python-headless  # Ensure this version works without GUI
-pyzbar
 pymongo
-matplotlib
 plotly

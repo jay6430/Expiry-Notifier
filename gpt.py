@@ -3,8 +3,6 @@ import pandas as pd
 from pymongo import MongoClient, errors
 from datetime import datetime
 import streamlit.components.v1 as components
-from streamlit_option_menu import option_menu
-import matplotlib.pyplot as plt
 import plotly.express as px
 import pandas as pd
 
@@ -16,23 +14,138 @@ try:
     db = client["expiry_notifier"]
     inventory_collection = db["Inventory"]  # For fetching EAN details
     products_collection = db["Products"]  # For storing, modifying, and viewing products
+    product_count_collection = db["Product_count"]  # New collection for product count data
+
     client.server_info()  # Test connection
 except errors.ServerSelectionTimeoutError as e:
     st.error(f"Could not connect to MongoDB: {e}")
     st.stop()
 
 
+
 # Unique options for segment, family, and prod_class
 unique_segments = [
-    'PROCESSED FOOD', ....
+    'PROCESSED FOOD', 'FRAGRANCES', 'CONFECTIONARY & SNACKS', 'FURNISHINGS & DECOR', 
+    'STAPLES', 'AUTO ACCESSORIES', 'PERSONAL CARE', 'STATIONERY', 'BABY CARE', 
+    'HOME CARE', 'HEALTH', 'GM FMCG', 'BEVERAGES', 'FROZEN VEG. / SNACKS', 'DAIRY', 
+    'HOUSEWARE', 'TOYS', 'CONSUMABLES', 'FRESH FRUITS & VEGETABLES', 'FURNITURE', 
+    'GIFT SOLUTIONS', 'COSMETICS', 'BEAUTY', '3902', 'LUGGAGE', 
+    'CONCESSIONAIRE SERVICES', 'SPORTING GOODS & FITNESS EQUIPMENTS', 'Devices', 
+    'SERVICES', 'HARDLINES'
 ]
 unique_families = [
-    'BISCUITS & BRANDED BAKERY', ....
+    'BISCUITS & BRANDED BAKERY', 'MASS MENS FRAGRANCE', 'CONFECTIONERY', 'FURNISHINGS', 
+    'SPICES & CONDIMENTS', 'TWO WHEELER', 'SKIN PRODUCTS', 'WRITING INSTRUMENTS & ACCESSORIES', 
+    'READY TO EAT', 'BABY HYGN', 'FLOURS', 'READY TO COOK', 'PULSES', 'HOUSEHOLD NEEDS', 
+    'OTC', 'Pooja Needs', 'RICE', 'PAPER PRODUCTS', 'FABRIC CARE', 'SNACKS', 'HAIR PRODUCTS', 
+    'TEA & COFFEE', 'OFFICE CONSUMABLES & STATIONERY', "P'SONAL HYGN", 'Hardlines', 'SKIN CARE', 
+    'FROZEN SNACKS', 'Disposable Goods', 'DAIRY - STAPLE', 'DRY FRUITS', 'INSECT CONTROL', 
+    'HOUSEHOLD CLEANING', 'DRINKS', 'Home Essential', 'Kitchen Storage', 'SCHOOL & ART PRODUCTS', 
+    'TABLEWARE', 'PERSONAL WASH', 'JUICES', "H'HOLD CLNG/CARENG/CARE", 'COOKWARE', 'VEHICLES & ACCESSORIES', 
+    'EDIBLE OILS', 'AYURVEDIC', 'HEALTH DRINKS', 'BRANDED BAKERY FRESH BAKERY', 
+    'FRESH MILK PRODUCTS', 'SALT', 'Bottle and lunch box', 'OTHER TOYS', 'DC / STORE CONSUMABLES', 
+    'FRESH FRUITS', 'HOME DÉCOR', 'PERSONAL HYGIENE', 'DAIRY - CHILLED', 
+    'FROZEN FRUITS & VEGETABLES', 'Deo', 'GIFTS'
 ]
 unique_classes = [
-    'BISCUITS', .....
-    
+    'BISCUITS', 'BODY SPRAYS', 'CONFECTIONERY', 'TABLE & KITCHEN', 'BLENDED SPICES', 
+    'POWDER SPICES', 'SPICES HING', 'SAFETY', 'SKIN CARE', 'PENS & ACCESSORIES', 
+    'JAMS & SPREADS', 'BABY HYGN/GROOMING', 'FLOURS', 'BODY WASHING', 'NOODLES & PASTA', 
+    'PULSES', 'AIR FRESHNERS', 'SKIN/SCALP TREATMENT PRODUCTS', 'Incense & Dhoop', 
+    'SAUCES', 'RICE', 'GASTROINTESTINAL REMEDY PRODUCTS', 'WHOLE SPICES', 'NOTE BOOKS', 
+    'LAUNDRY DETERGENTS', 'SNACKS', 'DESSERTS & MIXES', 'HAIR CARE', 'TEA', 
+    'FOLDERS & ACCESSORIES', 'ORAL HYGN', 'Bonding & Sealing', 'FACE CARE', 'BAKERY BASED', 
+    'BREAKFAST CEREALS', 'Face Tissues', 'GHEE', 'DRY FRUITS', 'INSECT CONTROL PRODUCTS', 
+    'FEM HYGN', 'HEALTH SUPPLEMENTS', 'SURFACE CLEANING', 'CARBONATED SOFT DRINKS'
 ]
+
+html_component="""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+        </head>
+        <body style="font-family: Arial, sans-serif; background-color: #333; color: #f5f5f5;">
+            <h4>Scan EAN Barcode</h4>
+            <div style="display: flex; justify-content: center; margin-top: 20px;">
+                <!-- Reader container with styled border -->
+                <div id="reader" style="
+                    width: 500px; 
+                    height: 450px;
+                    border: 5px solid white; 
+                    border-radius: 10px; 
+                    position: relative; 
+                    background: black;">
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <h4>Scan Result</h4>
+                <div id="result" style="
+                    padding: 15px; 
+                    border: 2px solid #ccc; 
+                    border-radius: 5px; 
+                    background-color: #f5f5f5; 
+                    color: #333; 
+                    font-size: 18px; 
+                    word-wrap: break-word; 
+                    display: inline-block;">---   EAN   ---</div>
+                <button id="copyEANButton" onclick="copyEAN()" style="
+                    padding: 10px 20px; 
+                    margin-top: 10px; 
+                    font-size: 16px; 
+                    background-color: #4CAF50; 
+                    color: white; 
+                    border: none; 
+                    border-radius: 5px; 
+                    cursor: pointer;">Copy EAN</button>
+                <div id="copyMessage" style="
+                    margin-top: 10px; 
+                    font-size: 14px; 
+                    color: #4CAF50; 
+                    display: none;">EAN copied to clipboard!</div>
+            </div>
+            <script>
+                function onScanSuccess(qrCodeMessage) {
+                    // Change border to green on success
+                    const readerElement = document.getElementById("reader");
+                    readerElement.style.border = "5px solid green";
+                    
+                    // Update the scan result
+                    document.getElementById("result").innerHTML =
+                        '<span>' + qrCodeMessage + "</span>";
+                }
+
+                function onScanError(errorMessage) {
+                    console.warn("Scan error:", errorMessage);
+                }
+
+                // Render the QR code scanner with customized box
+                const html5QrCodeScanner = new Html5QrcodeScanner("reader", {
+                    fps: 10,
+                    qrbox: { width: 250, height: 200 }
+                });
+                html5QrCodeScanner.render(onScanSuccess, onScanError);
+
+                function copyEAN() {
+                    const ean = document.getElementById("result").innerText;
+                    const copyMessage = document.getElementById("copyMessage");
+                    if (ean) {
+                        navigator.clipboard.writeText(ean).then(function() {
+                            // Show success message
+                            copyMessage.style.display = "block";
+                            setTimeout(() => { copyMessage.style.display = "none"; }, 2000);
+                        }).catch(function(error) {
+                            copyMessage.style.color = "red";
+                            copyMessage.innerText = "Failed to copy EAN!";
+                            copyMessage.style.display = "block";
+                            setTimeout(() => { copyMessage.style.display = "none"; }, 2000);
+                        });
+                    }
+                }
+            </script>
+        </body>
+        </html>
+        """
 
 
 # MongoDB helper functions
@@ -45,12 +158,14 @@ def load_products():
         st.error(f"Error loading products: {e}")
         return []
 
-def add_product(data):
-    """Insert a new product record into the Products collection."""
+
+def add_product(data, collection):
+    """Insert a new product record into the specified collection."""
     try:
-        products_collection.insert_one(data)
+        collection.insert_one(data)
     except Exception as e:
         st.error(f"Error adding product: {e}")
+
 
 def fetch_inventory_details(ean):
     """Fetch details from the Inventory collection based on EAN."""
@@ -62,14 +177,21 @@ def fetch_inventory_details(ean):
 
 
 # Function to get unique segments or families from the Products collection
-def get_unique_values(field):
+def get_unique_values_product_collection(field):
     try:
         values = sorted({rec.get(field, "") for rec in products_collection.find({}, {field: 1})})
         return values
     except Exception as e:
         st.error(f"Error fetching unique {field}s: {e}")
         return []
-
+# Function to get unique segments or families from the Products collection
+def get_unique_values_product_count_collection(field):
+    try:
+        values = sorted({rec.get(field, "") for rec in product_count_collection.find({}, {field: 1})})
+        return values
+    except Exception as e:
+        st.error(f"Error fetching unique {field}s: {e}")
+        return []
 
 # Function to fetch the inventory data for the selected segment or family
 def fetch_inventory_for_value(field, value):
@@ -117,7 +239,7 @@ pages = {
     "Add Product": "➕ Add Product",
     "View Database": "📋 View Database",
     "Modify Database": "✏️ Modify Database",
-    "Expiry Notifier Dashboard" : "Expiry Notifier Dashboard",
+    "Dashboard" : "Dashboard",
 }
 
 selected_page = st.sidebar.radio(
@@ -131,19 +253,22 @@ selected_page = st.sidebar.radio(
 st.session_state.page = list(pages.keys())[list(pages.values()).index(selected_page)]
 
 
-# Main App Logic
+
+
+
+
+# Add product App Logic
 if st.session_state.page == "Add Product":
     st.title("Add Product")
 
-    # JavaScript QR Code Scanner
+    # JavaScript QR Code Scanner (Common for both tabs)
+    st.subheader("QR Code Scanner")
     components.html(
-        """
-<HTML code>
-        """,
+        html_component,
         height=730,
     )
 
-    # Input EAN
+    # Input EAN (Common for both tabs)
     ean_no = st.text_input("Product EAN Number", key="scanned_ean_field", placeholder="Enter or scan EAN")
     if st.button("Fetch Details"):
         if ean_no:
@@ -163,49 +288,104 @@ if st.session_state.page == "Add Product":
         else:
             st.warning("Please enter a valid EAN number.")
 
+    # Tab layout for "Add Product for expiry" and "Add Product for count"
+    tab1, tab2 = st.tabs(["Add Product for Expiry", "Add Product for Count"])
 
-    # Form for submitting product details
-    with st.form("add_product_form", clear_on_submit=True):
-        product_name = st.text_input(
-            "Product Name", 
-            value=st.session_state.product_details.get("product_name", ""), 
-            placeholder="Mandatory"
-        )
-        article_num = st.text_input(
-            "Article Number", 
-            value=st.session_state.product_details.get("article_num", ""), 
-            placeholder="Optional"
-        )
-        segment = st.selectbox(
-            "Segment", 
-            options=[st.session_state.product_details.get("segment", "")] + unique_segments
-        )
-        family = st.selectbox(
-            "Family", 
-            options=[st.session_state.product_details.get("family", "")] + unique_families
-        )
-        prod_class = st.selectbox(
-            "Class", 
-            options=[st.session_state.product_details.get("prod_class", "")] + unique_classes
-        )
-        expiry_date = st.date_input("Expiry Date")
+    with tab1:
+        st.subheader("Add Product for Expiry")
 
-        if st.form_submit_button("Add Product"):
-            if product_name and expiry_date:
-                new_entry = {
-                    "EAN_No": ean_no,
-                    "product_name": product_name,
-                    "article_number": article_num or None,
-                    "segment": segment or None,
-                    "family": family or None,
-                    "class": prod_class or None,
-                    "expiry_date": expiry_date.strftime("%d/%m/%Y"),
-                    "timestamp": datetime.now(),
-                }
-                add_product(new_entry)
-                st.success("Product added successfully!")
-            else:
-                st.error("Please fill in all mandatory fields.")
+        # Form for submitting product details
+        with st.form("add_product_form", clear_on_submit=True):
+            product_name = st.text_input(
+                "Product Name", 
+                value=st.session_state.product_details.get("product_name", ""), 
+                placeholder="Mandatory"
+            )
+            article_num = st.text_input(
+                "Article Number", 
+                value=st.session_state.product_details.get("article_num", ""), 
+                placeholder="Optional"
+            )
+            segment = st.selectbox(
+                "Segment", 
+                options=[st.session_state.product_details.get("segment", "")] + unique_segments
+            )
+            family = st.selectbox(
+                "Family", 
+                options=[st.session_state.product_details.get("family", "")] + unique_families
+            )
+            prod_class = st.selectbox(
+                "Class", 
+                options=[st.session_state.product_details.get("prod_class", "")] + unique_classes
+            )
+            expiry_date = st.date_input("Expiry Date")
+
+            if st.form_submit_button("Add Product"):
+                if product_name and expiry_date:
+                    new_entry = {
+                        "EAN_No": ean_no,
+                        "product_name": product_name,
+                        "article_number": article_num or None,
+                        "segment": segment or None,
+                        "family": family or None,
+                        "class": prod_class or None,
+                        "expiry_date": expiry_date.strftime("%d/%m/%Y"),
+                        "timestamp": datetime.now(),
+                    }
+                    add_product(new_entry, products_collection)
+                    st.success("Product added successfully!")
+                else:
+                    st.error("Please fill in all mandatory fields.")
+
+    with tab2:
+        st.subheader("Add Product for Count")
+
+        # Form for submitting product details (for count)
+        with st.form("add_product_count_form", clear_on_submit=True):
+            product_name = st.text_input(
+                "Product Name", 
+                value=st.session_state.product_details.get("product_name", ""), 
+                placeholder="Mandatory"
+            )
+            article_num = st.text_input(
+                "Article Number", 
+                value=st.session_state.product_details.get("article_num", ""), 
+                placeholder="Optional"
+            )
+            segment = st.selectbox(
+                "Segment", 
+                options=[st.session_state.product_details.get("segment", "")] + unique_segments
+            )
+            family = st.selectbox(
+                "Family", 
+                options=[st.session_state.product_details.get("family", "")] + unique_families
+            )
+            prod_class = st.selectbox(
+                "Class", 
+                options=[st.session_state.product_details.get("prod_class", "")] + unique_classes
+            )
+            product_count = st.number_input("Product Count", min_value=0, value=0)
+
+            if st.form_submit_button("Add Product"):
+                if product_name and product_count >= 0:
+                    new_entry = {
+                        "EAN_No": ean_no,
+                        "product_name": product_name,
+                        "article_number": article_num or None,
+                        "segment": segment or None,
+                        "family": family or None,
+                        "class": prod_class or None,
+                        "product_count": product_count,
+                        "timestamp": datetime.now(),
+                    }
+                    add_product(new_entry, product_count_collection)
+                    st.success("Product count added successfully!")
+                else:
+                    st.error("Please fill in all mandatory fields.")
+
+
+
+
 
 # Modify Database section for deleting records
 elif st.session_state.page == "Modify Database":
@@ -313,116 +493,107 @@ elif st.session_state.page == "Modify Database":
 
 
 
-# Expiry Notifier Dashboard Page
-elif st.session_state.page == "Expiry Notifier Dashboard":
-    st.title("Expiry Notifier Dashboard")
-    
-    # Tab layout for Segment Dashboard, Family Dashboard, and Near Expiry Dashboard
-    tab1, tab2, tab3 = st.tabs(["Segment Dashboard", "Family Dashboard", "Near Expiry Dashboard"])
+# Dashboard Page
+elif st.session_state.page == "Dashboard":
+    st.title("Dashboard")
+
+    # Tab layout for Expiry Products Scanning Status, Near Expiry Dashboard, and Raw Data
+    tab1, tab2, tab3 = st.tabs(["Expiry Products Scanning Status", "Near Expiry Dashboard", "Raw Data"])
 
     with tab1:
-        st.subheader("Segment Dashboard (Scanning status)")
-        
-        # Dropdown to select segment
-        unique_segments = get_unique_values("segment")
-        selected_segment = st.selectbox("Select Segment", options=unique_segments)
+        st.subheader("Expiry Products Scanning Status")
 
-        if selected_segment:
-            # Fetch data for selected segment
-            inventory_data = fetch_inventory_for_value("Segment", selected_segment)
-            products_data = fetch_products_for_value("segment", selected_segment)
+        # User input to select between Segment or Family
+        dashboard_type = st.radio(
+            "Select Dashboard Type:", 
+            options=["Segment", "Family"], 
+            index=0
+        )
 
-            # Count of products in the inventory vs. products in products collection
-            total_inventory_products = len(inventory_data)
-            scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
-            remaining_products = total_inventory_products - scanned_products
+        if dashboard_type == "Segment":
+            # Segment Dashboard Logic
+            unique_segments = get_unique_values_product_collection("segment")
+            selected_segment = st.selectbox("Select Segment", options=unique_segments)
 
-            # Calculate scanned vs remaining percentage
-            scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
-            remaining_percentage = 100 - scanned_percentage
+            if selected_segment:
+                inventory_data = fetch_inventory_for_value("Segment", selected_segment)
+                products_data = fetch_products_for_value("segment", selected_segment)
 
-            # Plot the percentage graph
-            fig = px.pie(
-                names=["Scanned", "Remaining"],
-                values=[scanned_percentage, remaining_percentage],
-                title=f"Product Scanned vs Remaining in {selected_segment}",
-                hole=0.3
-            )
-            st.plotly_chart(fig)
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
 
-            # Display remaining products in tabular form
-            remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
-            
-            if remaining_products_data:
-                remaining_df = pd.DataFrame(remaining_products_data)
-                st.write(f"**Remaining Products in {selected_segment}**")
-                st.dataframe(remaining_df)
-            else:
-                st.info(f"All products in segment '{selected_segment}' are already scanned.")
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_segment}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_segment}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in segment '{selected_segment}' are already scanned.")
+
+        elif dashboard_type == "Family":
+            # Family Dashboard Logic
+            unique_families = get_unique_values_product_collection("family")
+            selected_family = st.selectbox("Select Family", options=unique_families)
+
+            if selected_family:
+                inventory_data = fetch_inventory_for_value("Family", selected_family)
+                products_data = fetch_products_for_value("family", selected_family)
+
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
+
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_family}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_family}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in family '{selected_family}' are already scanned.")
 
     with tab2:
-        st.subheader("Family Dashboard (Scanning status)")
-        
-        # Dropdown to select family
-        unique_families = get_unique_values("family")
-        selected_family = st.selectbox("Select Family", options=unique_families)
-
-        if selected_family:
-            # Fetch data for selected family
-            inventory_data = fetch_inventory_for_value("Family", selected_family)  # Fetching inventory by family
-            products_data = fetch_products_for_value("family", selected_family)  # Fetching products by family
-
-            # Count of products in the inventory vs. products in products collection
-            total_inventory_products = len(inventory_data)
-            scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
-            remaining_products = total_inventory_products - scanned_products
-
-            # Calculate scanned vs remaining percentage
-            scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
-            remaining_percentage = 100 - scanned_percentage
-
-            # Plot the percentage graph
-            fig = px.pie(
-                names=["Scanned", "Remaining"],
-                values=[scanned_percentage, remaining_percentage],
-                title=f"Product Scanned vs Remaining in {selected_family}",
-                hole=0.3
-            )
-            st.plotly_chart(fig)
-
-            # Display remaining products in tabular form
-            remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
-            
-            if remaining_products_data:
-                remaining_df = pd.DataFrame(remaining_products_data)
-                st.write(f"**Remaining Products in {selected_family}**")
-                st.dataframe(remaining_df)
-            else:
-                st.info(f"All products in family '{selected_family}' are already scanned.")
-    
-    with tab3:
         st.subheader("Near Expiry Dashboard")
-        
-        # Dropdown to select expiry range
+
         expiry_range = st.selectbox("Select Expiry Range", options=[15, 20, 30], index=0)
         today = pd.to_datetime("today")
         expiry_date_limit = today + pd.Timedelta(days=expiry_range)
 
-        # Fetch products that are going to expire in the next selected days
         products_data = list(products_collection.find({
             "expiry_date": {"$lte": expiry_date_limit.strftime("%d/%m/%Y")}
         }))
-        
-        # Calculate the percentage of products near expiry vs remaining products
+
         total_products = len(products_data)
         expiring_products = len([prod for prod in products_data if pd.to_datetime(prod["expiry_date"], format="%d/%m/%Y") <= expiry_date_limit])
         remaining_products = total_products - expiring_products
 
-        # Calculate expiring vs remaining percentage
         expiring_percentage = (expiring_products / total_products) * 100 if total_products > 0 else 0
         remaining_percentage = 100 - expiring_percentage
 
-        # Plot the percentage graph
         fig = px.pie(
             names=["Expiring", "Remaining"],
             values=[expiring_percentage, remaining_percentage],
@@ -431,15 +602,83 @@ elif st.session_state.page == "Expiry Notifier Dashboard":
         )
         st.plotly_chart(fig)
 
-        # Display the products expiring in the selected range
         expiring_products_data = [prod for prod in products_data if pd.to_datetime(prod["expiry_date"], format="%d/%m/%Y") <= expiry_date_limit]
-        
+
         if expiring_products_data:
             expiring_df = pd.DataFrame(expiring_products_data)
             st.write(f"**Products Expiring in Next {expiry_range} Days**")
             st.dataframe(expiring_df)
         else:
             st.info(f"No products are expiring in the next {expiry_range} days.")
+
+    with tab3:
+        st.subheader("Raw Data")
+
+        # User input to select collection
+        selected_collection = st.radio(
+            "Select Collection:", 
+            options=["Scanned products for Expiry", "Scanned products for Count"], 
+            index=0
+        )
+
+        # Map collection names to actual collections
+        collection_map = {
+            "Scanned products for Expiry": products_collection,
+            "Scanned products for Count": product_count_collection
+        }
+        collection = collection_map[selected_collection]
+
+        # User input to filter data
+        filter_option = st.selectbox("Filter By:", options=["All Data", "Segment", "Family"], index=0)
+
+        if filter_option == "All Data":
+            # Display all data
+            data = list(collection.find({}, {"_id": 0}))  # Exclude the `_id` field explicitly
+            if data:
+                df = pd.DataFrame(data)
+                st.dataframe(df)
+            else:
+                st.info("No data available in the selected collection.")
+
+
+
+
+        elif filter_option == "Segment":
+            # Filter by segment
+            if selected_collection == "Scanned products for Expiry":
+                unique_segments = get_unique_values_product_collection("segment")
+            elif selected_collection == "Scanned products for Count":
+                unique_segments = get_unique_values_product_count_collection("segment")
+
+            selected_segment = st.selectbox("Select Segment", options=unique_segments, key="segment_filter")
+
+            if selected_segment:
+                data = list(collection.find({"segment": selected_segment}))
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info(f"No data found for segment '{selected_segment}'.")
+
+        elif filter_option == "Family":
+            # Filter by family
+            if selected_collection == "Scanned products for Expiry":
+                unique_families = get_unique_values_product_collection("family")
+            elif selected_collection == "Scanned products for Count":
+                unique_families = get_unique_values_product_count_collection("family")
+
+            selected_family = st.selectbox("Select Family", options=unique_families, key="family_filter")
+
+            if selected_family:
+                data = list(collection.find({"family": selected_family}))
+                if data:
+                    df = pd.DataFrame(data)
+                    st.dataframe(df)
+                else:
+                    st.info(f"No data found for family '{selected_family}'.")
+
+
+
 
 
 
