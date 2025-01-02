@@ -149,7 +149,7 @@ html_component="""
 
 
 # MongoDB helper functions
-def load_products():
+def load_products_from_products_collection():
     """Load all product records from the Products collection."""
     try:
         records = list(products_collection.find({}, {"_id": 0}))  # Exclude MongoDB ID
@@ -158,6 +158,15 @@ def load_products():
         st.error(f"Error loading products: {e}")
         return []
 
+
+def load_products_from_product_count_collection():
+    """Load all product records from the Products collection."""
+    try:
+        records = list(product_count_collection.find({}, {"_id": 0}))  # Exclude MongoDB ID
+        return records
+    except Exception as e:
+        st.error(f"Error loading products: {e}")
+        return []
 
 def add_product(data, collection):
     """Insert a new product record into the specified collection."""
@@ -250,7 +259,7 @@ if "product_details" not in st.session_state:
     }
 
 # Professional Sidebar Navigation
-st.sidebar.title("Expiry Notifier")
+st.sidebar.title("U2RZ Navigation")
 st.sidebar.caption("Manage your inventory with ease.")
 
 # Use page_link to create navigation
@@ -277,10 +286,10 @@ st.session_state.page = list(pages.keys())[list(pages.values()).index(selected_p
 
 # Add product App Logic
 if st.session_state.page == "Add Product":
-    st.title("Add Product")
+    st.title("U2RZ Inventory Management")
 
     # JavaScript QR Code Scanner (Common for both tabs)
-    st.subheader("QR Code Scanner")
+    st.subheader("Add Product")
     components.html(
         html_component,
         height=730,
@@ -409,105 +418,210 @@ if st.session_state.page == "Add Product":
 elif st.session_state.page == "Modify Database":
     st.title("Modify Database")
 
-    # Ask user for the operation
-    operation = st.radio(
-        "Which operation would you like to perform?",
-        options=["Update Record", "Delete Single/Multiple Records", "Delete Entire Segment", "Delete Entire Class"],
-        key="operation_choice"
-    )
+    # Tab layout for "Add Product for expiry" and "Add Product for count"
+    tab1, tab2 = st.tabs(["Modify Database for Product Expiry", "Modify Database for Product Count"])
 
-    # Fetch all records from the Products collection
-    records = load_products()
+    with tab1:
+        
+        # Ask user for the operation
+        operation = st.radio(
+            "Which operation would you like to perform?",
+            options=["Update Record", "Delete Single/Multiple Records", "Delete Entire Segment", "Delete Entire Class"],
+            key="operation_choice_product_expiry"
+        )
 
-    if records:
-        # Prepare dropdown options with combined text of EAN_No and product_name
-        dropdown_options = [
-            {
-                "EAN_No": rec["EAN_No"],
-                "product_name": rec["product_name"],
-                "record": rec,
-                "display": f"{rec['EAN_No']} - {rec['product_name']}"
-            }
-            for rec in records
-        ]
-        dropdown_labels = [opt["display"] for opt in dropdown_options]
+        # Fetch all records from the Products collection
+        records = load_products_from_products_collection()
 
-        if operation == "Update Record":
-            # Dropdown for updating a single record
-            selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
-            selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
-
-            if selected_record:
-                # Show editable fields
-                updated_record = {
-                    "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
-                    "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
-                    "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
-                    "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
-                    "family": st.text_input("Family", value=selected_record.get("family", "")),
-                    "class": st.text_input("Class", value=selected_record.get("class", "")),
-                    "expiry_date": st.date_input("Expiry Date", value=datetime.strptime(selected_record["expiry_date"], "%d/%m/%Y"))
+        if records:
+            # Prepare dropdown options with combined text of EAN_No and product_name
+            dropdown_options = [
+                {
+                    "EAN_No": rec["EAN_No"],
+                    "product_name": rec["product_name"],
+                    "record": rec,
+                    "display": f"{rec['EAN_No']} - {rec['product_name']}"
                 }
+                for rec in records
+            ]
+            dropdown_labels = [opt["display"] for opt in dropdown_options]
 
-                # Format expiry_date to 15/07/2026
-                if updated_record["expiry_date"]:
-                    updated_record["expiry_date"] = updated_record["expiry_date"].strftime("%d/%m/%Y")
+            if operation == "Update Record":
+                # Dropdown for updating a single record
+                selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
+                selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
 
-                # Confirm and update record
-                if st.button("Modify Record"):
+                if selected_record:
+                    # Show editable fields
+                    updated_record = {
+                        "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
+                        "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
+                        "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
+                        "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
+                        "family": st.text_input("Family", value=selected_record.get("family", "")),
+                        "class": st.text_input("Class", value=selected_record.get("class", "")),
+                        "expiry_date": st.date_input("Expiry Date", value=datetime.strptime(selected_record["expiry_date"], "%d/%m/%Y"))
+                    }
+
+                    # Format expiry_date to 15/07/2026
+                    if updated_record["expiry_date"]:
+                        updated_record["expiry_date"] = updated_record["expiry_date"].strftime("%d/%m/%Y")
+
+                    # Confirm and update record
+                    if st.button("Modify Record", key="Modify Database for Product Expiry"):
+                        try:
+                            products_collection.update_one(
+                                {"EAN_No": selected_record["EAN_No"]},
+                                {"$set": updated_record}
+                            )
+                            st.success("Record updated successfully!")
+                        except Exception as e:
+                            st.error(f"Error updating record: {e}")
+
+            elif operation == "Delete Single/Multiple Records":
+                # Dropdown for deleting multiple records
+                selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
+                selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
+
+                if selected_records:
+                    if st.button("Delete Selected Record(s)", key= "Delete Entry for Product Expiry"):
+                        try:
+                            delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                            products_collection.delete_many(delete_query)
+                            st.success("Selected records deleted successfully!")
+                        except Exception as e:
+                            st.error(f"Error deleting records: {e}")
+
+            elif operation == "Delete Entire Segment":
+                # Fetch unique segments from the records
+                unique_segments = sorted({rec.get("segment", "") for rec in records if rec.get("segment", "")})
+
+                selected_segment = st.selectbox("Select a segment to delete", options=unique_segments, key = "segment selectbox from product expiry")
+
+                if selected_segment and st.button("Delete Segment", key = "delete segment from product expiry"):
                     try:
-                        products_collection.update_one(
-                            {"EAN_No": selected_record["EAN_No"]},
-                            {"$set": updated_record}
-                        )
-                        st.success("Record updated successfully!")
-                    except Exception as e:
-                        st.error(f"Error updating record: {e}")
-
-        elif operation == "Delete Single/Multiple Records":
-            # Dropdown for deleting multiple records
-            selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
-            selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
-
-            if selected_records:
-                if st.button("Delete Selected Record(s)"):
-                    try:
-                        delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                        delete_query = {"segment": selected_segment}
                         products_collection.delete_many(delete_query)
-                        st.success("Selected records deleted successfully!")
+                        st.success(f"All records under segment '{selected_segment}' deleted successfully!")
                     except Exception as e:
-                        st.error(f"Error deleting records: {e}")
+                        st.error(f"Error deleting segment: {e}")
 
-        elif operation == "Delete Entire Segment":
-            # Fetch unique segments from the records
-            unique_segments = sorted({rec.get("segment", "") for rec in records if rec.get("segment", "")})
+            elif operation == "Delete Entire Class":
+                # Fetch unique classes from the records
+                unique_classes = sorted({rec.get("class", "") for rec in records if rec.get("class", "")})
 
-            selected_segment = st.selectbox("Select a segment to delete", options=unique_segments)
+                selected_class = st.selectbox("Select a class to delete", options=unique_classes, key = "class selectbox from product expiry")
 
-            if selected_segment and st.button("Delete Segment"):
-                try:
-                    delete_query = {"segment": selected_segment}
-                    products_collection.delete_many(delete_query)
-                    st.success(f"All records under segment '{selected_segment}' deleted successfully!")
-                except Exception as e:
-                    st.error(f"Error deleting segment: {e}")
+                if selected_class and st.button("Delete Class", key = "delete class from product expiry"):
+                    try:
+                        delete_query = {"class": selected_class}
+                        products_collection.delete_many(delete_query)
+                        st.success(f"All records under class '{selected_class}' deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting class: {e}")
 
-        elif operation == "Delete Entire Class":
-            # Fetch unique classes from the records
-            unique_classes = sorted({rec.get("class", "") for rec in records if rec.get("class", "")})
+        else:
+            st.warning("No records found in the database.")
 
-            selected_class = st.selectbox("Select a class to delete", options=unique_classes)
 
-            if selected_class and st.button("Delete Class"):
-                try:
-                    delete_query = {"class": selected_class}
-                    products_collection.delete_many(delete_query)
-                    st.success(f"All records under class '{selected_class}' deleted successfully!")
-                except Exception as e:
-                    st.error(f"Error deleting class: {e}")
+    with tab2:
+        
+        # Ask user for the operation
+        operation = st.radio(
+            "Which operation would you like to perform?",
+            options=["Update Record", "Delete Single/Multiple Records", "Delete Entire Segment", "Delete Entire Class"],
+            key="operation_choice_product_count"
+        )
 
-    else:
-        st.warning("No records found in the database.")
+        # Fetch all records from the Products collection
+        records = load_products_from_product_count_collection()
+
+        if records:
+            # Prepare dropdown options with combined text of EAN_No and product_name
+            dropdown_options = [
+                {
+                    "EAN_No": rec["EAN_No"],
+                    "product_name": rec["product_name"],
+                    "record": rec,
+                    "display": f"{rec['EAN_No']} - {rec['product_name']}"
+                }
+                for rec in records
+            ]
+            dropdown_labels = [opt["display"] for opt in dropdown_options]
+
+            if operation == "Update Record":
+                # Dropdown for updating a single record
+                selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
+                selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
+
+                if selected_record:
+                    # Show editable fields
+                    updated_record = {
+                        "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
+                        "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
+                        "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
+                        "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
+                        "family": st.text_input("Family", value=selected_record.get("family", "")),
+                        "class": st.text_input("Class", value=selected_record.get("class", "")),
+                        "product_count": st.number_input("Product Count", min_value=0, value=selected_record.get("product_count", ""))
+                    }
+
+
+                    # Confirm and update record
+                    if st.button("Modify Record", key ="Modify Database for Product Count"):
+                        try:
+                            product_count_collection.update_one(
+                                {"EAN_No": selected_record["EAN_No"]},
+                                {"$set": updated_record}
+                            )
+                            st.success("Record updated successfully!")
+                        except Exception as e:
+                            st.error(f"Error updating record: {e}")
+
+            elif operation == "Delete Single/Multiple Records":
+                # Dropdown for deleting multiple records
+                selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
+                selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
+
+                if selected_records:
+                    if st.button("Delete Selected Record(s)" , key= "Delete Entry for Product Count"):
+                        try:
+                            delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                            product_count_collection.delete_many(delete_query)
+                            st.success("Selected records deleted successfully!")
+                        except Exception as e:
+                            st.error(f"Error deleting records: {e}")
+
+            elif operation == "Delete Entire Segment":
+                # Fetch unique segments from the records
+                unique_segments = sorted({rec.get("segment", "") for rec in records if rec.get("segment", "")})
+
+                selected_segment = st.selectbox("Select a segment to delete", options=unique_segments, key = "segment selectbox from product count")
+
+                if selected_segment and st.button("Delete Segment", key = "delete segment from product count"):
+                    try:
+                        delete_query = {"segment": selected_segment}
+                        product_count_collection.delete_many(delete_query)
+                        st.success(f"All records under segment '{selected_segment}' deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting segment: {e}")
+
+            elif operation == "Delete Entire Class":
+                # Fetch unique classes from the records
+                unique_classes = sorted({rec.get("class", "") for rec in records if rec.get("class", "")})
+
+                selected_class = st.selectbox("Select a class to delete", options=unique_classes, key = "class selectbox from product count")
+
+                if selected_class and st.button("Delete Class", key = "delete class from product count"):
+                    try:
+                        delete_query = {"class": selected_class}
+                        product_count_collection.delete_many(delete_query)
+                        st.success(f"All records under class '{selected_class}' deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting class: {e}")
+
+        else:
+            st.warning("No records found in the database.")
 
 
 
@@ -712,19 +826,19 @@ elif st.session_state.page == "Dashboard":
             st.info(f"No products are expiring in the next {expiry_range} days.")
 
     with tab4:
-        st.subheader("Raw Data")
+        st.subheader("Scanned Products Raw Data")
 
         # User input to select collection
         selected_collection = st.radio(
             "Select Collection:", 
-            options=["Scanned products for Expiry", "Scanned products for Count"], 
+            options=["Expiry Product Database", "Product Count Database"], 
             index=0
         )
 
         # Map collection names to actual collections
         collection_map = {
-            "Scanned products for Expiry": products_collection,
-            "Scanned products for Count": product_count_collection
+            "Expiry Product Database": products_collection,
+            "Product Count Database": product_count_collection
         }
         collection = collection_map[selected_collection]
 
@@ -745,9 +859,9 @@ elif st.session_state.page == "Dashboard":
 
         elif filter_option == "Segment":
             # Filter by segment
-            if selected_collection == "Scanned products for Expiry":
+            if selected_collection == "Expiry Product Database":
                 unique_segments = get_unique_values_product_collection("segment")
-            elif selected_collection == "Scanned products for Count":
+            elif selected_collection == "Product Count Database":
                 unique_segments = get_unique_values_product_count_collection("segment")
 
             selected_segment = st.selectbox("Select Segment", options=unique_segments, key="segment_filter")
@@ -762,9 +876,9 @@ elif st.session_state.page == "Dashboard":
 
         elif filter_option == "Family":
             # Filter by family
-            if selected_collection == "Scanned products for Expiry":
+            if selected_collection == "Expiry Product Database":
                 unique_families = get_unique_values_product_collection("family")
-            elif selected_collection == "Scanned products for Count":
+            elif selected_collection == "Product Count Database":
                 unique_families = get_unique_values_product_count_collection("family")
 
             selected_family = st.selectbox("Select Family", options=unique_families, key="family_filter")
