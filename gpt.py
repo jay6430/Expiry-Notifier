@@ -25,131 +25,22 @@ except errors.ServerSelectionTimeoutError as e:
 
 # Unique options for segment, family, and prod_class
 unique_segments = [
-    'PROCESSED FOOD', 'FRAGRANCES', 'CONFECTIONARY & SNACKS', 'FURNISHINGS & DECOR', 
-    'STAPLES', 'AUTO ACCESSORIES', 'PERSONAL CARE', 'STATIONERY', 'BABY CARE', 
-    'HOME CARE', 'HEALTH', 'GM FMCG', 'BEVERAGES', 'FROZEN VEG. / SNACKS', 'DAIRY', 
-    'HOUSEWARE', 'TOYS', 'CONSUMABLES', 'FRESH FRUITS & VEGETABLES', 'FURNITURE', 
-    'GIFT SOLUTIONS', 'COSMETICS', 'BEAUTY', '3902', 'LUGGAGE', 
-    'CONCESSIONAIRE SERVICES', 'SPORTING GOODS & FITNESS EQUIPMENTS', 'Devices', 
-    'SERVICES', 'HARDLINES'
+    'PROCESSED FOOD', ....
 ]
 unique_families = [
-    'BISCUITS & BRANDED BAKERY', 'MASS MENS FRAGRANCE', 'CONFECTIONERY', 'FURNISHINGS', 
-    'SPICES & CONDIMENTS', 'TWO WHEELER', 'SKIN PRODUCTS', 'WRITING INSTRUMENTS & ACCESSORIES', 
-    'READY TO EAT', 'BABY HYGN', 'FLOURS', 'READY TO COOK', 'PULSES', 'HOUSEHOLD NEEDS', 
-    'OTC', 'Pooja Needs', 'RICE', 'PAPER PRODUCTS', 'FABRIC CARE', 'SNACKS', 'HAIR PRODUCTS', 
-    'TEA & COFFEE', 'OFFICE CONSUMABLES & STATIONERY', "P'SONAL HYGN", 'Hardlines', 'SKIN CARE', 
-    'FROZEN SNACKS', 'Disposable Goods', 'DAIRY - STAPLE', 'DRY FRUITS', 'INSECT CONTROL', 
-    'HOUSEHOLD CLEANING', 'DRINKS', 'Home Essential', 'Kitchen Storage', 'SCHOOL & ART PRODUCTS', 
-    'TABLEWARE', 'PERSONAL WASH', 'JUICES', "H'HOLD CLNG/CARENG/CARE", 'COOKWARE', 'VEHICLES & ACCESSORIES', 
-    'EDIBLE OILS', 'AYURVEDIC', 'HEALTH DRINKS', 'BRANDED BAKERY FRESH BAKERY', 
-    'FRESH MILK PRODUCTS', 'SALT', 'Bottle and lunch box', 'OTHER TOYS', 'DC / STORE CONSUMABLES', 
-    'FRESH FRUITS', 'HOME DÉCOR', 'PERSONAL HYGIENE', 'DAIRY - CHILLED', 
-    'FROZEN FRUITS & VEGETABLES', 'Deo', 'GIFTS'
+    'BISCUITS & BRANDED BAKERY', ....
 ]
 unique_classes = [
-    'BISCUITS', 'BODY SPRAYS', 'CONFECTIONERY', 'TABLE & KITCHEN', 'BLENDED SPICES', 
-    'POWDER SPICES', 'SPICES HING', 'SAFETY', 'SKIN CARE', 'PENS & ACCESSORIES', 
-    'JAMS & SPREADS', 'BABY HYGN/GROOMING', 'FLOURS', 'BODY WASHING', 'NOODLES & PASTA', 
-    'PULSES', 'AIR FRESHNERS', 'SKIN/SCALP TREATMENT PRODUCTS', 'Incense & Dhoop', 
-    'SAUCES', 'RICE', 'GASTROINTESTINAL REMEDY PRODUCTS', 'WHOLE SPICES', 'NOTE BOOKS', 
-    'LAUNDRY DETERGENTS', 'SNACKS', 'DESSERTS & MIXES', 'HAIR CARE', 'TEA', 
-    'FOLDERS & ACCESSORIES', 'ORAL HYGN', 'Bonding & Sealing', 'FACE CARE', 'BAKERY BASED', 
-    'BREAKFAST CEREALS', 'Face Tissues', 'GHEE', 'DRY FRUITS', 'INSECT CONTROL PRODUCTS', 
-    'FEM HYGN', 'HEALTH SUPPLEMENTS', 'SURFACE CLEANING', 'CARBONATED SOFT DRINKS'
+    'BISCUITS', ....
 ]
 
 html_component="""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-        </head>
-        <body style="font-family: Arial, sans-serif; background-color: #333; color: #f5f5f5;">
-            <h4>Scan EAN Barcode</h4>
-            <div style="display: flex; justify-content: center; margin-top: 20px;">
-                <!-- Reader container with styled border -->
-                <div id="reader" style="
-                    width: 500px; 
-                    height: 450px;
-                    border: 5px solid white; 
-                    border-radius: 10px; 
-                    position: relative; 
-                    background: black;">
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <h4>Scan Result</h4>
-                <div id="result" style="
-                    padding: 15px; 
-                    border: 2px solid #ccc; 
-                    border-radius: 5px; 
-                    background-color: #f5f5f5; 
-                    color: #333; 
-                    font-size: 18px; 
-                    word-wrap: break-word; 
-                    display: inline-block;">---   EAN   ---</div>
-                <button id="copyEANButton" onclick="copyEAN()" style="
-                    padding: 10px 20px; 
-                    margin-top: 10px; 
-                    font-size: 16px; 
-                    background-color: #4CAF50; 
-                    color: white; 
-                    border: none; 
-                    border-radius: 5px; 
-                    cursor: pointer;">Copy EAN</button>
-                <div id="copyMessage" style="
-                    margin-top: 10px; 
-                    font-size: 14px; 
-                    color: #4CAF50; 
-                    display: none;">EAN copied to clipboard!</div>
-            </div>
-            <script>
-                function onScanSuccess(qrCodeMessage) {
-                    // Change border to green on success
-                    const readerElement = document.getElementById("reader");
-                    readerElement.style.border = "5px solid green";
-                    
-                    // Update the scan result
-                    document.getElementById("result").innerHTML =
-                        '<span>' + qrCodeMessage + "</span>";
-                }
-
-                function onScanError(errorMessage) {
-                    console.warn("Scan error:", errorMessage);
-                }
-
-                // Render the QR code scanner with customized box
-                const html5QrCodeScanner = new Html5QrcodeScanner("reader", {
-                    fps: 10,
-                    qrbox: { width: 250, height: 200 }
-                });
-                html5QrCodeScanner.render(onScanSuccess, onScanError);
-
-                function copyEAN() {
-                    const ean = document.getElementById("result").innerText;
-                    const copyMessage = document.getElementById("copyMessage");
-                    if (ean) {
-                        navigator.clipboard.writeText(ean).then(function() {
-                            // Show success message
-                            copyMessage.style.display = "block";
-                            setTimeout(() => { copyMessage.style.display = "none"; }, 2000);
-                        }).catch(function(error) {
-                            copyMessage.style.color = "red";
-                            copyMessage.innerText = "Failed to copy EAN!";
-                            copyMessage.style.display = "block";
-                            setTimeout(() => { copyMessage.style.display = "none"; }, 2000);
-                        });
-                    }
-                }
-            </script>
-        </body>
-        </html>
+        <html content>
         """
 
 
 # MongoDB helper functions
-def load_products():
+def load_products_from_products_collection():
     """Load all product records from the Products collection."""
     try:
         records = list(products_collection.find({}, {"_id": 0}))  # Exclude MongoDB ID
@@ -158,6 +49,15 @@ def load_products():
         st.error(f"Error loading products: {e}")
         return []
 
+
+def load_products_from_product_count_collection():
+    """Load all product records from the Products collection."""
+    try:
+        records = list(product_count_collection.find({}, {"_id": 0}))  # Exclude MongoDB ID
+        return records
+    except Exception as e:
+        st.error(f"Error loading products: {e}")
+        return []
 
 def add_product(data, collection):
     """Insert a new product record into the specified collection."""
@@ -213,6 +113,17 @@ def fetch_products_for_value(field, value):
         return []
 
 
+# Function to fetch the products count data for the selected segment or family
+def fetch_products_count_for_value(field, value):
+    try:
+        query = {field: value}
+        return list(product_count_collection.find(query, {"EAN_No": 1, "product_name": 1, "_id": 0}))
+    except Exception as e:
+        st.error(f"Error fetching products for {field} '{value}': {e}")
+        return []
+
+
+
 
 
 
@@ -231,15 +142,14 @@ if "product_details" not in st.session_state:
     }
 
 # Professional Sidebar Navigation
-st.sidebar.title("Expiry Notifier")
+st.sidebar.title("U2RZ Navigation")
 st.sidebar.caption("Manage your inventory with ease.")
 
 # Use page_link to create navigation
 pages = {
     "Add Product": "➕ Add Product",
-    "View Database": "📋 View Database",
     "Modify Database": "✏️ Modify Database",
-    "Dashboard" : "Dashboard",
+    "Dashboard" : "✨Dashboard",
 }
 
 selected_page = st.sidebar.radio(
@@ -259,10 +169,10 @@ st.session_state.page = list(pages.keys())[list(pages.values()).index(selected_p
 
 # Add product App Logic
 if st.session_state.page == "Add Product":
-    st.title("Add Product")
+    st.title("U2RZ Inventory Management")
 
     # JavaScript QR Code Scanner (Common for both tabs)
-    st.subheader("QR Code Scanner")
+    st.subheader("Add Product")
     components.html(
         html_component,
         height=730,
@@ -270,7 +180,7 @@ if st.session_state.page == "Add Product":
 
     # Input EAN (Common for both tabs)
     ean_no = st.text_input("Product EAN Number", key="scanned_ean_field", placeholder="Enter or scan EAN")
-    if st.button("Fetch Details"):
+    if st.button("Fetch Details", key = 'Fetch details from inventory'):
         if ean_no:
             details = fetch_inventory_details(ean_no)
             if details:
@@ -391,105 +301,210 @@ if st.session_state.page == "Add Product":
 elif st.session_state.page == "Modify Database":
     st.title("Modify Database")
 
-    # Ask user for the operation
-    operation = st.radio(
-        "Which operation would you like to perform?",
-        options=["Update Record", "Delete Single/Multiple Records", "Delete Entire Segment", "Delete Entire Class"],
-        key="operation_choice"
-    )
+    # Tab layout for "Add Product for expiry" and "Add Product for count"
+    tab1, tab2 = st.tabs(["Modify Database for Product Expiry", "Modify Database for Product Count"])
 
-    # Fetch all records from the Products collection
-    records = load_products()
+    with tab1:
+        
+        # Ask user for the operation
+        operation = st.radio(
+            "Which operation would you like to perform?",
+            options=["Update Record", "Delete Single/Multiple Records", "Delete Entire Segment", "Delete Entire Class"],
+            key="operation_choice_product_expiry"
+        )
 
-    if records:
-        # Prepare dropdown options with combined text of EAN_No and product_name
-        dropdown_options = [
-            {
-                "EAN_No": rec["EAN_No"],
-                "product_name": rec["product_name"],
-                "record": rec,
-                "display": f"{rec['EAN_No']} - {rec['product_name']}"
-            }
-            for rec in records
-        ]
-        dropdown_labels = [opt["display"] for opt in dropdown_options]
+        # Fetch all records from the Products collection
+        records = load_products_from_products_collection()
 
-        if operation == "Update Record":
-            # Dropdown for updating a single record
-            selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
-            selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
-
-            if selected_record:
-                # Show editable fields
-                updated_record = {
-                    "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
-                    "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
-                    "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
-                    "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
-                    "family": st.text_input("Family", value=selected_record.get("family", "")),
-                    "class": st.text_input("Class", value=selected_record.get("class", "")),
-                    "expiry_date": st.date_input("Expiry Date", value=datetime.strptime(selected_record["expiry_date"], "%d/%m/%Y"))
+        if records:
+            # Prepare dropdown options with combined text of EAN_No and product_name
+            dropdown_options = [
+                {
+                    "EAN_No": rec["EAN_No"],
+                    "product_name": rec["product_name"],
+                    "record": rec,
+                    "display": f"{rec['EAN_No']} - {rec['product_name']}"
                 }
+                for rec in records
+            ]
+            dropdown_labels = [opt["display"] for opt in dropdown_options]
 
-                # Format expiry_date to 15/07/2026
-                if updated_record["expiry_date"]:
-                    updated_record["expiry_date"] = updated_record["expiry_date"].strftime("%d/%m/%Y")
+            if operation == "Update Record":
+                # Dropdown for updating a single record
+                selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
+                selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
 
-                # Confirm and update record
-                if st.button("Modify Record"):
+                if selected_record:
+                    # Show editable fields
+                    updated_record = {
+                        "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
+                        "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
+                        "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
+                        "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
+                        "family": st.text_input("Family", value=selected_record.get("family", "")),
+                        "class": st.text_input("Class", value=selected_record.get("class", "")),
+                        "expiry_date": st.date_input("Expiry Date", value=datetime.strptime(selected_record["expiry_date"], "%d/%m/%Y"))
+                    }
+
+                    # Format expiry_date to 15/07/2026
+                    if updated_record["expiry_date"]:
+                        updated_record["expiry_date"] = updated_record["expiry_date"].strftime("%d/%m/%Y")
+
+                    # Confirm and update record
+                    if st.button("Modify Record", key="Modify Database for Product Expiry"):
+                        try:
+                            products_collection.update_one(
+                                {"EAN_No": selected_record["EAN_No"]},
+                                {"$set": updated_record}
+                            )
+                            st.success("Record updated successfully!")
+                        except Exception as e:
+                            st.error(f"Error updating record: {e}")
+
+            elif operation == "Delete Single/Multiple Records":
+                # Dropdown for deleting multiple records
+                selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
+                selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
+
+                if selected_records:
+                    if st.button("Delete Selected Record(s)", key= "Delete Entry for Product Expiry"):
+                        try:
+                            delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                            products_collection.delete_many(delete_query)
+                            st.success("Selected records deleted successfully!")
+                        except Exception as e:
+                            st.error(f"Error deleting records: {e}")
+
+            elif operation == "Delete Entire Segment":
+                # Fetch unique segments from the records
+                unique_segments = sorted({rec.get("segment", "") for rec in records if rec.get("segment", "")})
+
+                selected_segment = st.selectbox("Select a segment to delete", options=unique_segments, key = "segment selectbox from product expiry")
+
+                if selected_segment and st.button("Delete Segment", key = "delete segment from product expiry"):
                     try:
-                        products_collection.update_one(
-                            {"EAN_No": selected_record["EAN_No"]},
-                            {"$set": updated_record}
-                        )
-                        st.success("Record updated successfully!")
-                    except Exception as e:
-                        st.error(f"Error updating record: {e}")
-
-        elif operation == "Delete Single/Multiple Records":
-            # Dropdown for deleting multiple records
-            selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
-            selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
-
-            if selected_records:
-                if st.button("Delete Selected Record(s)"):
-                    try:
-                        delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                        delete_query = {"segment": selected_segment}
                         products_collection.delete_many(delete_query)
-                        st.success("Selected records deleted successfully!")
+                        st.success(f"All records under segment '{selected_segment}' deleted successfully!")
                     except Exception as e:
-                        st.error(f"Error deleting records: {e}")
+                        st.error(f"Error deleting segment: {e}")
 
-        elif operation == "Delete Entire Segment":
-            # Fetch unique segments from the records
-            unique_segments = sorted({rec.get("segment", "") for rec in records if rec.get("segment", "")})
+            elif operation == "Delete Entire Class":
+                # Fetch unique classes from the records
+                unique_classes = sorted({rec.get("class", "") for rec in records if rec.get("class", "")})
 
-            selected_segment = st.selectbox("Select a segment to delete", options=unique_segments)
+                selected_class = st.selectbox("Select a class to delete", options=unique_classes, key = "class selectbox from product expiry")
 
-            if selected_segment and st.button("Delete Segment"):
-                try:
-                    delete_query = {"segment": selected_segment}
-                    products_collection.delete_many(delete_query)
-                    st.success(f"All records under segment '{selected_segment}' deleted successfully!")
-                except Exception as e:
-                    st.error(f"Error deleting segment: {e}")
+                if selected_class and st.button("Delete Class", key = "delete class from product expiry"):
+                    try:
+                        delete_query = {"class": selected_class}
+                        products_collection.delete_many(delete_query)
+                        st.success(f"All records under class '{selected_class}' deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting class: {e}")
 
-        elif operation == "Delete Entire Class":
-            # Fetch unique classes from the records
-            unique_classes = sorted({rec.get("class", "") for rec in records if rec.get("class", "")})
+        else:
+            st.warning("No records found in the database.")
 
-            selected_class = st.selectbox("Select a class to delete", options=unique_classes)
 
-            if selected_class and st.button("Delete Class"):
-                try:
-                    delete_query = {"class": selected_class}
-                    products_collection.delete_many(delete_query)
-                    st.success(f"All records under class '{selected_class}' deleted successfully!")
-                except Exception as e:
-                    st.error(f"Error deleting class: {e}")
+    with tab2:
+        
+        # Ask user for the operation
+        operation = st.radio(
+            "Which operation would you like to perform?",
+            options=["Update Record", "Delete Single/Multiple Records", "Delete Entire Segment", "Delete Entire Class"],
+            key="operation_choice_product_count"
+        )
 
-    else:
-        st.warning("No records found in the database.")
+        # Fetch all records from the Products collection
+        records = load_products_from_product_count_collection()
+
+        if records:
+            # Prepare dropdown options with combined text of EAN_No and product_name
+            dropdown_options = [
+                {
+                    "EAN_No": rec["EAN_No"],
+                    "product_name": rec["product_name"],
+                    "record": rec,
+                    "display": f"{rec['EAN_No']} - {rec['product_name']}"
+                }
+                for rec in records
+            ]
+            dropdown_labels = [opt["display"] for opt in dropdown_options]
+
+            if operation == "Update Record":
+                # Dropdown for updating a single record
+                selected_record_label = st.selectbox("Select a record to update", options=dropdown_labels)
+                selected_record = next(opt["record"] for opt in dropdown_options if opt["display"] == selected_record_label)
+
+                if selected_record:
+                    # Show editable fields
+                    updated_record = {
+                        "EAN_No": st.text_input("EAN", value=selected_record["EAN_No"]),
+                        "product_name": st.text_input("Product Name", value=selected_record["product_name"]),
+                        "article_number": st.text_input("Article Number", value=selected_record.get("article_number", "")),
+                        "segment": st.text_input("Segment", value=selected_record.get("segment", "")),
+                        "family": st.text_input("Family", value=selected_record.get("family", "")),
+                        "class": st.text_input("Class", value=selected_record.get("class", "")),
+                        "product_count": st.number_input("Product Count", min_value=0, value=selected_record.get("product_count", ""))
+                    }
+
+
+                    # Confirm and update record
+                    if st.button("Modify Record", key ="Modify Database for Product Count"):
+                        try:
+                            product_count_collection.update_one(
+                                {"EAN_No": selected_record["EAN_No"]},
+                                {"$set": updated_record}
+                            )
+                            st.success("Record updated successfully!")
+                        except Exception as e:
+                            st.error(f"Error updating record: {e}")
+
+            elif operation == "Delete Single/Multiple Records":
+                # Dropdown for deleting multiple records
+                selected_records_labels = st.multiselect("Select records to delete", options=dropdown_labels)
+                selected_records = [opt["record"] for opt in dropdown_options if opt["display"] in selected_records_labels]
+
+                if selected_records:
+                    if st.button("Delete Selected Record(s)" , key= "Delete Entry for Product Count"):
+                        try:
+                            delete_query = {"$or": [{"EAN_No": rec["EAN_No"]} for rec in selected_records]}
+                            product_count_collection.delete_many(delete_query)
+                            st.success("Selected records deleted successfully!")
+                        except Exception as e:
+                            st.error(f"Error deleting records: {e}")
+
+            elif operation == "Delete Entire Segment":
+                # Fetch unique segments from the records
+                unique_segments = sorted({rec.get("segment", "") for rec in records if rec.get("segment", "")})
+
+                selected_segment = st.selectbox("Select a segment to delete", options=unique_segments, key = "segment selectbox from product count")
+
+                if selected_segment and st.button("Delete Segment", key = "delete segment from product count"):
+                    try:
+                        delete_query = {"segment": selected_segment}
+                        product_count_collection.delete_many(delete_query)
+                        st.success(f"All records under segment '{selected_segment}' deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting segment: {e}")
+
+            elif operation == "Delete Entire Class":
+                # Fetch unique classes from the records
+                unique_classes = sorted({rec.get("class", "") for rec in records if rec.get("class", "")})
+
+                selected_class = st.selectbox("Select a class to delete", options=unique_classes, key = "class selectbox from product count")
+
+                if selected_class and st.button("Delete Class", key = "delete class from product count"):
+                    try:
+                        delete_query = {"class": selected_class}
+                        product_count_collection.delete_many(delete_query)
+                        st.success(f"All records under class '{selected_class}' deleted successfully!")
+                    except Exception as e:
+                        st.error(f"Error deleting class: {e}")
+
+        else:
+            st.warning("No records found in the database.")
 
 
 
@@ -498,7 +513,7 @@ elif st.session_state.page == "Dashboard":
     st.title("Dashboard")
 
     # Tab layout for Expiry Products Scanning Status, Near Expiry Dashboard, and Raw Data
-    tab1, tab2, tab3 = st.tabs(["Expiry Products Scanning Status", "Near Expiry Dashboard", "Raw Data"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Expiry Products Scanning Status", "Product Count Scanning Status", "Near Expiry Dashboard", "Raw Data"])
 
     with tab1:
         st.subheader("Expiry Products Scanning Status")
@@ -507,7 +522,8 @@ elif st.session_state.page == "Dashboard":
         dashboard_type = st.radio(
             "Select Dashboard Type:", 
             options=["Segment", "Family"], 
-            index=0
+            index=0 , 
+            key="Expiry Products Scanning Status",
         )
 
         if dashboard_type == "Segment":
@@ -577,6 +593,87 @@ elif st.session_state.page == "Dashboard":
                     st.info(f"All products in family '{selected_family}' are already scanned.")
 
     with tab2:
+        st.subheader("Product Count Scanning Status")
+
+                # User input to select between Segment or Family
+        dashboard_type = st.radio(
+            "Select Dashboard Type:", 
+            options=["Segment", "Family"], 
+            index=0,
+            key="Product Count Scanning Status"
+        )
+
+        if dashboard_type == "Segment":
+            # Segment Dashboard Logic
+            unique_segments = get_unique_values_product_count_collection("segment")
+            selected_segment = st.selectbox("Select Segment", options=unique_segments)
+
+            if selected_segment:
+                inventory_data = fetch_inventory_for_value("Segment", selected_segment)
+                products_data = fetch_products_count_for_value("segment", selected_segment)
+
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
+
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_segment}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_segment}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in segment '{selected_segment}' are already scanned.")
+
+        elif dashboard_type == "Family":
+            # Family Dashboard Logic
+            unique_families = get_unique_values_product_count_collection("family")
+            selected_family = st.selectbox("Select Family", options=unique_families)
+
+            if selected_family:
+                inventory_data = fetch_inventory_for_value("Family", selected_family)
+                products_data = fetch_products_count_for_value("family", selected_family)
+
+                total_inventory_products = len(inventory_data)
+                scanned_products = len([prod for prod in products_data if prod["EAN_No"] in [inv["EAN"] for inv in inventory_data]])
+                remaining_products = total_inventory_products - scanned_products
+
+                scanned_percentage = (scanned_products / total_inventory_products) * 100 if total_inventory_products > 0 else 0
+                remaining_percentage = 100 - scanned_percentage
+
+                fig = px.pie(
+                    names=["Scanned", "Remaining"],
+                    values=[scanned_percentage, remaining_percentage],
+                    title=f"Product Scanned vs Remaining in {selected_family}",
+                    hole=0.3
+                )
+                st.plotly_chart(fig)
+
+                remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
+
+                if remaining_products_data:
+                    remaining_df = pd.DataFrame(remaining_products_data)
+                    st.write(f"**Remaining Products in {selected_family}**")
+                    st.dataframe(remaining_df)
+                else:
+                    st.info(f"All products in family '{selected_family}' are already scanned.")
+
+
+
+
+
+    with tab3:
         st.subheader("Near Expiry Dashboard")
 
         expiry_range = st.selectbox("Select Expiry Range", options=[15, 20, 30], index=0)
@@ -611,20 +708,20 @@ elif st.session_state.page == "Dashboard":
         else:
             st.info(f"No products are expiring in the next {expiry_range} days.")
 
-    with tab3:
-        st.subheader("Raw Data")
+    with tab4:
+        st.subheader("Scanned Products Raw Data")
 
         # User input to select collection
         selected_collection = st.radio(
             "Select Collection:", 
-            options=["Scanned products for Expiry", "Scanned products for Count"], 
+            options=["Expiry Product Database", "Product Count Database"], 
             index=0
         )
 
         # Map collection names to actual collections
         collection_map = {
-            "Scanned products for Expiry": products_collection,
-            "Scanned products for Count": product_count_collection
+            "Expiry Product Database": products_collection,
+            "Product Count Database": product_count_collection
         }
         collection = collection_map[selected_collection]
 
@@ -645,9 +742,9 @@ elif st.session_state.page == "Dashboard":
 
         elif filter_option == "Segment":
             # Filter by segment
-            if selected_collection == "Scanned products for Expiry":
+            if selected_collection == "Expiry Product Database":
                 unique_segments = get_unique_values_product_collection("segment")
-            elif selected_collection == "Scanned products for Count":
+            elif selected_collection == "Product Count Database":
                 unique_segments = get_unique_values_product_count_collection("segment")
 
             selected_segment = st.selectbox("Select Segment", options=unique_segments, key="segment_filter")
@@ -662,9 +759,9 @@ elif st.session_state.page == "Dashboard":
 
         elif filter_option == "Family":
             # Filter by family
-            if selected_collection == "Scanned products for Expiry":
+            if selected_collection == "Expiry Product Database":
                 unique_families = get_unique_values_product_collection("family")
-            elif selected_collection == "Scanned products for Count":
+            elif selected_collection == "Product Count Database":
                 unique_families = get_unique_values_product_count_collection("family")
 
             selected_family = st.selectbox("Select Family", options=unique_families, key="family_filter")
@@ -677,14 +774,3 @@ elif st.session_state.page == "Dashboard":
                 else:
                     st.info(f"No data found for family '{selected_family}'.")
 
-
-
-
-
-
-elif st.session_state.page == "View Database":
-    df = pd.DataFrame(load_products())
-    if not df.empty:
-        st.dataframe(df)
-    else:
-        st.info("No data found.")
