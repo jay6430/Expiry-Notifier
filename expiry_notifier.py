@@ -302,6 +302,7 @@ if st.session_state.page == "Add Product":
                     "prod_class": details.get("Class", ""),
                 })
                 st.success("Details fetched successfully!")
+                st.rerun()
             else:
                 st.warning("Details not found in the inventory.")
         else:
@@ -632,6 +633,7 @@ elif st.session_state.page == "Dashboard":
                 st.session_state.authenticated = True
                 st.success("Authentication successful! Access granted to the Dashboard.")
                 st.rerun()  # Reload the page to display the dashboard
+                st.rerun()
             else:
                 st.error("Incorrect password. Please try again.")
     
