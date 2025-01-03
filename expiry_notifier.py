@@ -59,7 +59,7 @@ unique_classes = [
     'FEM HYGN', 'HEALTH SUPPLEMENTS', 'SURFACE CLEANING', 'CARBONATED SOFT DRINKS'
 ]
 
-html_component="""
+barcode_html_component="""
         <!DOCTYPE html>
         <html>
         <head>
@@ -273,9 +273,6 @@ st.session_state.page = list(pages.keys())[list(pages.values()).index(selected_p
 
 
 
-
-
-
 # Add product App Logic
 if st.session_state.page == "Add Product":
     st.title("U2RZ Inventory Management")
@@ -283,30 +280,32 @@ if st.session_state.page == "Add Product":
     # JavaScript QR Code Scanner (Common for both tabs)
     st.subheader("Add Product")
     components.html(
-        html_component,
+        barcode_html_component,
         height=730,
     )
 
     # Input EAN (Common for both tabs)
-    ean_no = st.text_input("Product EAN Number", key="scanned_ean_field", placeholder="Enter or scan EAN")
-    if st.button("Fetch Details", key = 'Fetch details from inventory'):
-        if ean_no:
-            details = fetch_inventory_details(ean_no)
-            if details :
-                # Populate session state
-                st.session_state.product_details.update({
-                    "product_name": details.get("Material_description", ""),
-                    "article_num": details.get("Article_num", ""),
-                    "segment": details.get("Segment", ""),
-                    "family": details.get("Family", ""),
-                    "prod_class": details.get("Class", ""),
-                })
-                st.success("Details fetched successfully!")
-                #st.rerun()
+    # Fetch Details Button in Add Product Page
+    with st.form("fetch_details_form"):
+        ean_no = st.text_input("Product EAN Number", key="ean_input", placeholder="Enter or scan EAN")
+        submitted = st.form_submit_button("Fetch Details")
+        if submitted:
+            if ean_no:
+                details = fetch_inventory_details(ean_no)
+                if details:
+                    st.session_state.product_details.update({
+                        "product_name": details.get("Material_description", ""),
+                        "article_num": details.get("Article_num", ""),
+                        "segment": details.get("Segment", ""),
+                        "family": details.get("Family", ""),
+                        "prod_class": details.get("Class", ""),
+                    })
+                    st.success("Details fetched successfully!")
+                else:
+                    st.warning("Details not found in the inventory.")
             else:
-                st.warning("Details not found in the inventory.")
-        else:
-            st.warning("Please enter a valid EAN number.")
+                st.warning("Please enter a valid EAN number.")
+
 
     # Tab layout for "Add Product for expiry" and "Add Product for count"
     tab1, tab2 = st.tabs(["Add Product for Expiry", "Add Product for Count"])
@@ -618,24 +617,26 @@ elif st.session_state.page == "Modify Database":
 
 
 
+
+
 # Dashboard Page
 elif st.session_state.page == "Dashboard":
-
-    # Check if the user is authenticated
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
 
     if not st.session_state.authenticated:
         st.title("Authentication Required")
-        password = st.text_input("Enter Password:", type="password")
-        if st.button("Login"):
-            if password == "psm1654":  # Replace with your actual password
-                st.session_state.authenticated = True
-                st.success("Authentication successful! Access granted to the Dashboard.")
-                st.rerun()  # Reload the page to display the dashboard
-                #st.rerun()
-            else:
-                st.error("Incorrect password. Please try again.")
+
+        with st.form("login_form"):
+            password = st.text_input("Enter Password:", type="password")
+            submitted = st.form_submit_button("Login")
+            if submitted:
+                if password == "psm1654":  # Replace with your actual password
+                    st.session_state.authenticated = True
+                    st.success("Authentication successful! Access granted to the Dashboard.")
+                    st.rerun()  # Rerun to show the Dashboard
+                else:
+                    st.error("Incorrect password. Please try again.")
     
     else:
         
@@ -678,7 +679,7 @@ elif st.session_state.page == "Dashboard":
                         title=f"Product Scanned vs Remaining in {selected_segment}",
                         hole=0.3
                     )
-                    st.plotly_chart(fig)
+                    st.plotly_chart(fig, key = "Expiry Products segment chart")
 
                     remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
 
@@ -711,7 +712,7 @@ elif st.session_state.page == "Dashboard":
                         title=f"Product Scanned vs Remaining in {selected_family}",
                         hole=0.3
                     )
-                    st.plotly_chart(fig)
+                    st.plotly_chart(fig, key = "Expiry Products family chart")
 
                     remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
 
@@ -755,7 +756,7 @@ elif st.session_state.page == "Dashboard":
                         title=f"Product Scanned vs Remaining in {selected_segment}",
                         hole=0.3
                     )
-                    st.plotly_chart(fig)
+                    st.plotly_chart(fig, key="Product Count segment chart")
 
                     remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
 
@@ -788,7 +789,7 @@ elif st.session_state.page == "Dashboard":
                         title=f"Product Scanned vs Remaining in {selected_family}",
                         hole=0.3
                     )
-                    st.plotly_chart(fig)
+                    st.plotly_chart(fig, key="Product Count family chart")
 
                     remaining_products_data = [inv for inv in inventory_data if inv["EAN"] not in [prod["EAN_No"] for prod in products_data]]
 
@@ -827,7 +828,7 @@ elif st.session_state.page == "Dashboard":
                 title=f"Products Expiring in Next {expiry_range} Days",
                 hole=0.3
             )
-            st.plotly_chart(fig)
+            st.plotly_chart(fig, key="Near expiry universal chart")
 
             expiring_products_data = [prod for prod in products_data if pd.to_datetime(prod["expiry_date"], format="%d/%m/%Y") <= expiry_date_limit]
 
