@@ -657,7 +657,7 @@ elif st.session_state.page == "Dashboard":
             if dashboard_type == "Segment":
                 # Segment Dashboard Logic
                 unique_segments = get_unique_values_product_collection("segment")
-                selected_segment = st.selectbox("Select Segment", options=unique_segments)
+                selected_segment = st.selectbox("Select Segment", options=unique_segments, key = "Expiry Products Segment")
 
                 if selected_segment:
                     inventory_data = fetch_inventory_for_value("Segment", selected_segment)
@@ -690,7 +690,7 @@ elif st.session_state.page == "Dashboard":
             elif dashboard_type == "Family":
                 # Family Dashboard Logic
                 unique_families = get_unique_values_product_collection("family")
-                selected_family = st.selectbox("Select Family", options=unique_families)
+                selected_family = st.selectbox("Select Family", options=unique_families, key = "Expiry Products Family")
 
                 if selected_family:
                     inventory_data = fetch_inventory_for_value("Family", selected_family)
@@ -734,7 +734,7 @@ elif st.session_state.page == "Dashboard":
             if dashboard_type == "Segment":
                 # Segment Dashboard Logic
                 unique_segments = get_unique_values_product_count_collection("segment")
-                selected_segment = st.selectbox("Select Segment", options=unique_segments)
+                selected_segment = st.selectbox("Select Segment", options=unique_segments, key ="Product Count Segment")
 
                 if selected_segment:
                     inventory_data = fetch_inventory_for_value("Segment", selected_segment)
@@ -767,7 +767,7 @@ elif st.session_state.page == "Dashboard":
             elif dashboard_type == "Family":
                 # Family Dashboard Logic
                 unique_families = get_unique_values_product_count_collection("family")
-                selected_family = st.selectbox("Select Family", options=unique_families)
+                selected_family = st.selectbox("Select Family", options=unique_families, key = "Product Count Family")
 
                 if selected_family:
                     inventory_data = fetch_inventory_for_value("Family", selected_family)
