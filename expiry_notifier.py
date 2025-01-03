@@ -292,7 +292,7 @@ if st.session_state.page == "Add Product":
     if st.button("Fetch Details", key = 'Fetch details from inventory'):
         if ean_no:
             details = fetch_inventory_details(ean_no)
-            if details:
+            if details :
                 # Populate session state
                 st.session_state.product_details.update({
                     "product_name": details.get("Material_description", ""),
@@ -302,7 +302,7 @@ if st.session_state.page == "Add Product":
                     "prod_class": details.get("Class", ""),
                 })
                 st.success("Details fetched successfully!")
-                st.rerun()
+                #st.rerun()
             else:
                 st.warning("Details not found in the inventory.")
         else:
@@ -633,7 +633,7 @@ elif st.session_state.page == "Dashboard":
                 st.session_state.authenticated = True
                 st.success("Authentication successful! Access granted to the Dashboard.")
                 st.rerun()  # Reload the page to display the dashboard
-                st.rerun()
+                #st.rerun()
             else:
                 st.error("Incorrect password. Please try again.")
     
